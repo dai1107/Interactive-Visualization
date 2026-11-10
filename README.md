@@ -4,7 +4,9 @@
 
 已实现可从静态 CSV 加载数据的交互网页，支持物种与性别筛选、个体详情、固定与清除详情、同步统计、重置和可展开数据表。采用 Vega-Lite 绘图，Vega 相关库以固定版本保存在 `vendor/`，不依赖 CDN、外部字体或定制后端。
 
-仓库：https://github.com/dai1107/Interactive-Visualization 。GitHub Pages 的实际发布与核验结果见[实现与验收记录](docs/04_实现与验收.md)。
+**在线体验：https://dai1107.github.io/Interactive-Visualization/**
+
+仓库：https://github.com/dai1107/Interactive-Visualization 。GitHub Pages 已构建成功，10 项线上资源均返回 HTTP 200 且与本地文件一致；浏览器实测限制见[实现与验收记录](docs/04_实现与验收.md)。
 
 ## 项目资料
 
@@ -63,6 +65,14 @@ python scripts/github_pages.py inspect
 ```
 
 `enable` 仅在尚未启用 Pages、且具有仓库管理权限时配置 `main` 根目录；遇到其他已有来源会保留原配置并退出。首次部署以实际 Pages 构建与线上 HTTP 核验结果为准。
+
+复查线上资源与当前检出版本是否一致：
+
+```powershell
+python scripts/check_site.py https://dai1107.github.io/Interactive-Visualization/
+```
+
+该检查只验证 HTTP 状态、脚本 MIME 类型、资源字节与 CSV 哈希，不代替浏览器中的点击、悬停和排版验收。
 
 ## 数据与引用
 
