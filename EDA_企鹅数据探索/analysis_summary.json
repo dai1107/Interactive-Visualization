@@ -1,0 +1,81 @@
+{
+  "rows": 344,
+  "columns": [
+    "species",
+    "island",
+    "bill_length_mm",
+    "bill_depth_mm",
+    "flipper_length_mm",
+    "body_mass_g",
+    "sex",
+    "year"
+  ],
+  "missing": {
+    "species": 0,
+    "island": 0,
+    "bill_length_mm": 2,
+    "bill_depth_mm": 2,
+    "flipper_length_mm": 2,
+    "body_mass_g": 2,
+    "sex": 11,
+    "year": 0
+  },
+  "species_counts": {
+    "Adelie": 152,
+    "Gentoo": 124,
+    "Chinstrap": 68
+  },
+  "species_mean_mass_g": {
+    "Adelie": 3700.7,
+    "Chinstrap": 3733.1,
+    "Gentoo": 5076.0
+  },
+  "species_mean_bill_length_mm": {
+    "Adelie": 38.8,
+    "Chinstrap": 48.8,
+    "Gentoo": 47.5
+  },
+  "sex_mean_mass_g": {
+    "Adelie_female": 3368.8,
+    "Adelie_male": 4043.5,
+    "Chinstrap_female": 3527.2,
+    "Chinstrap_male": 3939.0,
+    "Gentoo_female": 4679.7,
+    "Gentoo_male": 5484.8
+  },
+  "island_species_counts": {
+    "Adelie": {
+      "Biscoe": 44,
+      "Dream": 56,
+      "Torgersen": 52
+    },
+    "Chinstrap": {
+      "Biscoe": 0,
+      "Dream": 68,
+      "Torgersen": 0
+    },
+    "Gentoo": {
+      "Biscoe": 124,
+      "Dream": 0,
+      "Torgersen": 0
+    }
+  },
+  "island_mean_mass_g": {
+    "Biscoe": 4716.0,
+    "Dream": 3712.9,
+    "Torgersen": 3706.4
+  },
+  "adelie_island_mean_mass_g": {
+    "Biscoe": 3709.7,
+    "Dream": 3688.4,
+    "Torgersen": 3706.4
+  },
+  "flipper_mass_correlation_overall": 0.871,
+  "flipper_mass_correlation_by_species": {
+    "Adelie": 0.468,
+    "Chinstrap": 0.642,
+    "Gentoo": 0.703
+  },
+  "figure_count": 10,
+  "report_page_count": 13
+}
