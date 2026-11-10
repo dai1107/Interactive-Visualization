@@ -1,0 +1,2 @@
+# Keep the audited original CSV byte-identical on Windows and other systems.
+*.csv text eol=lf

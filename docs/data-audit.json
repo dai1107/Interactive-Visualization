@@ -1,0 +1,230 @@
+{
+  "verified_date": "2026-11-10",
+  "source_file": "EDA_企鹅数据探索/penguins.csv",
+  "sha256": "f204db2c753b0937caac3cb35258562c14f073e4bbc76be24b4c51ce22767a93",
+  "row_count": 344,
+  "column_count": 8,
+  "missing": {
+    "species": 0,
+    "island": 0,
+    "bill_length_mm": 2,
+    "bill_depth_mm": 2,
+    "flipper_length_mm": 2,
+    "body_mass_g": 2,
+    "sex": 11,
+    "year": 0
+  },
+  "duplicate_extra_rows": 0,
+  "species_counts_raw": {
+    "Adelie": 152,
+    "Gentoo": 124,
+    "Chinstrap": 68
+  },
+  "ranges": {
+    "bill_length_mm": {
+      "min": 32.1,
+      "max": 59.6,
+      "nonpositive_count": 0
+    },
+    "bill_depth_mm": {
+      "min": 13.1,
+      "max": 21.5,
+      "nonpositive_count": 0
+    },
+    "flipper_length_mm": {
+      "min": 172.0,
+      "max": 231.0,
+      "nonpositive_count": 0
+    },
+    "body_mass_g": {
+      "min": 2700.0,
+      "max": 6300.0,
+      "nonpositive_count": 0
+    }
+  },
+  "years": [
+    2007,
+    2008,
+    2009
+  ],
+  "invalid_main_record_ids": [
+    "P004",
+    "P272"
+  ],
+  "overall": {
+    "n": 342,
+    "pearson_r": 0.8712017673060114
+  },
+  "known_sex": {
+    "n": 333,
+    "pearson_r": 0.8729788985653613
+  },
+  "by_species": {
+    "Adelie": {
+      "n": 151,
+      "pearson_r": 0.46820169421793933
+    },
+    "Chinstrap": {
+      "n": 68,
+      "pearson_r": 0.6415594129316967
+    },
+    "Gentoo": {
+      "n": 123,
+      "pearson_r": 0.7026665243575185
+    }
+  },
+  "by_sex": {
+    "female": {
+      "n": 165,
+      "pearson_r": 0.8848249756326788
+    },
+    "male": {
+      "n": 168,
+      "pearson_r": 0.8654986521055602
+    },
+    "null": {
+      "n": 9,
+      "pearson_r": 0.8452118868055019
+    }
+  },
+  "by_species_and_sex": {
+    "Adelie": {
+      "female": {
+        "n": 73,
+        "pearson_r": 0.2629296411882983
+      },
+      "male": {
+        "n": 73,
+        "pearson_r": 0.36043447470048384
+      }
+    },
+    "Chinstrap": {
+      "female": {
+        "n": 34,
+        "pearson_r": 0.24215001572228767
+      },
+      "male": {
+        "n": 34,
+        "pearson_r": 0.6645877076388733
+      }
+    },
+    "Gentoo": {
+      "female": {
+        "n": 58,
+        "pearson_r": 0.48761802443174773
+      },
+      "male": {
+        "n": 61,
+        "pearson_r": 0.3304519850062649
+      }
+    }
+  },
+  "iqr_flags_within_species": [
+    {
+      "species": "Adelie",
+      "field": "flipper_length_mm",
+      "lower": 172.5,
+      "upper": 208.5,
+      "record_ids": [
+        "P029",
+        "P130"
+      ]
+    },
+    {
+      "species": "Adelie",
+      "field": "body_mass_g",
+      "lower": 2375.0,
+      "upper": 4975.0,
+      "record_ids": []
+    },
+    {
+      "species": "Chinstrap",
+      "field": "flipper_length_mm",
+      "lower": 176.0,
+      "upper": 216.0,
+      "record_ids": []
+    },
+    {
+      "species": "Chinstrap",
+      "field": "body_mass_g",
+      "lower": 2793.75,
+      "upper": 4643.75,
+      "record_ids": [
+        "P314",
+        "P315"
+      ]
+    },
+    {
+      "species": "Gentoo",
+      "field": "flipper_length_mm",
+      "lower": 198.5,
+      "upper": 234.5,
+      "record_ids": []
+    },
+    {
+      "species": "Gentoo",
+      "field": "body_mass_g",
+      "lower": 3500.0,
+      "upper": 6700.0,
+      "record_ids": []
+    }
+  ],
+  "sample": [
+    {
+      "record_id": "P001",
+      "species": "Adelie",
+      "island": "Torgersen",
+      "bill_length_mm": 39.1,
+      "bill_depth_mm": 18.7,
+      "flipper_length_mm": 181.0,
+      "body_mass_g": 3750.0,
+      "sex": "male",
+      "year": 2007
+    },
+    {
+      "record_id": "P002",
+      "species": "Adelie",
+      "island": "Torgersen",
+      "bill_length_mm": 39.5,
+      "bill_depth_mm": 17.4,
+      "flipper_length_mm": 186.0,
+      "body_mass_g": 3800.0,
+      "sex": "female",
+      "year": 2007
+    },
+    {
+      "record_id": "P003",
+      "species": "Adelie",
+      "island": "Torgersen",
+      "bill_length_mm": 40.3,
+      "bill_depth_mm": 18.0,
+      "flipper_length_mm": 195.0,
+      "body_mass_g": 3250.0,
+      "sex": "female",
+      "year": 2007
+    },
+    {
+      "record_id": "P004",
+      "species": "Adelie",
+      "island": "Torgersen",
+      "bill_length_mm": null,
+      "bill_depth_mm": null,
+      "flipper_length_mm": null,
+      "body_mass_g": null,
+      "sex": null,
+      "year": 2007
+    },
+    {
+      "record_id": "P005",
+      "species": "Adelie",
+      "island": "Torgersen",
+      "bill_length_mm": 36.7,
+      "bill_depth_mm": 19.3,
+      "flipper_length_mm": 193.0,
+      "body_mass_g": 3450.0,
+      "sex": "female",
+      "year": 2007
+    }
+  ],
+  "matches_previous_summary": true
+}
