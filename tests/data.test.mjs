@@ -3,8 +3,8 @@ import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
 import { createHash } from 'node:crypto';
 import vm from 'node:vm';
-import { parsePenguins, filterPenguins, pearson, SPECIES } from '../assets/data.js';
-import { chartSpec } from '../assets/chart.js';
+import { parsePenguins, filterPenguins, pearson, SPECIES, normalizeBrush, brushRows, summarize, massBins } from '../assets/data.js';
+import { chartSpec, histogramSpec, writeBrush } from '../assets/chart.js';
 
 const csv = readFileSync(new URL('../EDA_企鹅数据探索/penguins.csv', import.meta.url), 'utf8');
 const audit = JSON.parse(readFileSync(new URL('../docs/data-audit.json', import.meta.url), 'utf8'));
@@ -92,4 +92,74 @@ test('vendored Vega compiles and renders the real data and empty state with fixe
   const svg = await view.toSVG();
   assert.ok(svg.includes('体重 / g'));
   view.finalize();
+});
+
+test('rectangular selection includes its boundaries, supports empty results, and stays inside its filter baseline', () => {
+  const range = { flipper_length_mm: [180, 200], body_mass_g: [3000, 4000] };
+  const selected = brushRows(model.valid, range);
+  assert.equal(selected.length, 144);
+  close(summarize(selected).meanMass, 3553.9930555555557);
+  close(pearson(selected), 0.21839439010005007);
+  assert.ok(selected.some(row => row.flipper_length_mm === 180));
+  assert.ok(selected.some(row => row.flipper_length_mm === 200));
+  assert.ok(selected.some(row => row.body_mass_g === 3000));
+  assert.ok(selected.some(row => row.body_mass_g === 4000));
+  assert.equal(brushRows(model.valid, { flipper_length_mm: [170, 171], body_mass_g: [2500, 2600] }).length, 0);
+  const baseline = filterPenguins(model.valid, ['Chinstrap'], 'female');
+  assert.ok(brushRows(baseline, range).every(row => row.species === 'Chinstrap' && row.sex === 'female'));
+  assert.equal(brushRows(model.valid, null).length, 342);
+  assert.equal(normalizeBrush({}), null);
+  assert.equal(normalizeBrush({ flipper_length_mm: [180, NaN], body_mass_g: [3000, 4000] }), null);
+  assert.equal(summarize([]).meanMass, null);
+});
+
+test('linked distribution uses identical bins and conserves baseline and selected sample counts', () => {
+  const subset = brushRows(model.valid, { flipper_length_mm: [180, 200], body_mass_g: [3000, 4000] });
+  const bins = massBins(model.valid, subset);
+  assert.equal(bins.length, 16);
+  assert.equal(bins.reduce((sum, bin) => sum + bin.baseline_count, 0), 342);
+  assert.equal(bins.reduce((sum, bin) => sum + bin.selected_count, 0), 144);
+  assert.ok(bins.every(bin => bin.selected_count <= bin.baseline_count));
+  const edges = massBins([{ body_mass_g: 2500 }, { body_mass_g: 2750 }, { body_mass_g: 6500 }], []);
+  assert.equal(edges[0].baseline_count, 1);
+  assert.equal(edges[1].baseline_count, 1);
+  assert.equal(edges[15].baseline_count, 1);
+});
+
+test('native brush, point highlighting, linked histogram and resized range agree on the selected records', async () => {
+  const context = vm.createContext({ console, setTimeout, clearTimeout, setInterval, clearInterval, structuredClone });
+  for (const library of ['vega', 'vega-lite']) vm.runInContext(readFileSync(new URL(`../vendor/${library}.min.js`, import.meta.url), 'utf8'), context);
+  const createView = spec => new context.vega.View(context.vega.parse(context.vegaLite.compile(spec).spec), { renderer: 'none' });
+  const scatter = createView(chartSpec(700)), histogram = createView(histogramSpec(500));
+  const range = { flipper_length_mm: [180, 200], body_mass_g: [3000, 4000] };
+  scatter.change('points', context.vega.changeset().insert(model.valid));
+  await scatter.runAsync();
+  let signals = 0;
+  scatter.addSignalListener('region', () => { signals++; });
+  writeBrush(scatter, range); await scatter.runAsync();
+  assert.ok(signals > 0, 'native selection signal must be emitted for linked views');
+  const actualRange = normalizeBrush(scatter.signal('region'));
+  const selected = brushRows(model.valid, actualRange);
+  assert.equal(selected.length, 144);
+  function visit(item) {
+    if (item.mark?.name === 'observations_marks') return [{ id: item.datum.record_id, opacity: item.opacity }];
+    return item.items?.flatMap(visit) || [];
+  }
+  const highlighted = visit(scatter.scenegraph().root).filter(point => point.opacity > .5).map(point => point.id).sort();
+  assert.deepEqual(Array.from(highlighted), selected.map(row => row.record_id).sort());
+  histogram.change('distribution', context.vega.changeset().insert(massBins(model.valid, selected)));
+  await histogram.runAsync();
+  const yBefore = Array.from(histogram.scale('y').domain());
+  histogram.change('distribution', context.vega.changeset().remove(() => true).insert(massBins(model.valid, [])));
+  await histogram.runAsync();
+  assert.deepEqual(Array.from(histogram.scale('y').domain()), yBefore);
+  assert.deepEqual(Array.from(histogram.scale('x').domain()), [2500, 6500]);
+  scatter.width(300).height(290).resize(); await scatter.runAsync();
+  writeBrush(scatter, range); await scatter.runAsync();
+  assert.equal(brushRows(model.valid, normalizeBrush(scatter.signal('region'))).length, 144);
+  writeBrush(scatter, null); await scatter.runAsync();
+  assert.equal(normalizeBrush(scatter.signal('region')), null);
+  assert.equal(visit(scatter.scenegraph().root).filter(point => point.opacity > .5).length, 342);
+  assert.ok((await histogram.toSVG()).includes('体重 / g'));
+  scatter.finalize(); histogram.finalize();
 });

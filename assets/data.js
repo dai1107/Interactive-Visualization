@@ -83,3 +83,36 @@ export function correlationReason(rows) {
   if (pearson(rows) === null) return '当前鳍长或体重没有变化，相关系数不可计算。';
   return rows.length < 10 ? '样本较少，谨慎解释；此提示不代表显著性检验。' : '';
 }
+
+export function normalizeBrush(value) {
+  const result = {};
+  for (const field of ['flipper_length_mm', 'body_mass_g']) {
+    const extent = value?.[field];
+    if (!Array.isArray(extent) || extent.length !== 2 || !extent.every(Number.isFinite)) return null;
+    const [lo, hi] = [...extent].sort((a, b) => a - b);
+    if (lo === hi) return null;
+    result[field] = [lo, hi];
+  }
+  return result;
+}
+
+export function brushRows(rows, range) {
+  if (!range) return rows;
+  return rows.filter(row => Object.entries(range).every(([field, [lo, hi]]) => row[field] >= lo && row[field] <= hi));
+}
+
+export function summarize(rows) {
+  return { n: rows.length, r: pearson(rows), meanMass: rows.length ? rows.reduce((sum, row) => sum + row.body_mass_g, 0) / rows.length : null };
+}
+
+// Equal-width bins, [start,end) except the inclusive right edge of the last bin.
+export function massBins(baseline, subset) {
+  const bins = Array.from({ length: 16 }, (_, index) => ({ start: 2500 + index * 250, end: 2750 + index * 250, baseline_count: 0, selected_count: 0 }));
+  for (const [rows, key] of [[baseline, 'baseline_count'], [subset, 'selected_count']]) {
+    for (const row of rows) {
+      if (row.body_mass_g < 2500 || row.body_mass_g > 6500) continue;
+      bins[Math.min(15, Math.floor((row.body_mass_g - 2500) / 250))][key]++;
+    }
+  }
+  return bins;
+}

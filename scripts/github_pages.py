@@ -65,6 +65,12 @@ def main():
     if mode == 'inspect' and page_status == 200:
         status, build = request('/pages/builds/latest')
         print(json.dumps({'latest_build_status': status, 'status': build.get('status'), 'commit': build.get('commit'), 'error': build.get('error', {}).get('message')}))
+        # The legacy Pages status can remain "building" after an Actions deployment
+        # failure. Inspect the actual workflow as well instead of polling that flag.
+        workflow_status, workflows = request('/actions/runs?per_page=3')
+        if workflow_status == 200:
+            runs = [run for run in workflows.get('workflow_runs', []) if run.get('name') == 'pages build and deployment']
+            print(json.dumps({'pages_workflows': [{key: run.get(key) for key in ['id', 'head_sha', 'status', 'conclusion', 'html_url']} for run in runs]}))
     if page_status not in [200, 201, 202, 404]:
         raise SystemExit(1)
 
