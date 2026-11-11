@@ -4,6 +4,7 @@ import { createBubbleChart, drawSizeLegend, drawShadeLegend, drawAnnual, COLOR }
 
 import { csvFingerprint, validateView } from './bonus-model.js?v=bonus-20261112d';
 import { createBonusExperience } from './bonus-experience.js?v=bonus-20261112d';
+import { createLlmAssistant } from './llm-ui.js?v=llm-20261112e';
 
 const $=id=>document.getElementById(id),name=id=>SPECIES.find(s=>s.id===id)?.name||id;
 const number=(v,digits=1)=>v===null||!Number.isFinite(v)?'—':v.toLocaleString('zh-CN',{minimumFractionDigits:digits,maximumFractionDigits:digits});
@@ -29,6 +30,8 @@ function sexComparison(scroll=true){
   $('comparison').open=true;$('comparison-status').textContent='A：全部年份的帽带雌性；B：全部年份的帽带雄性。各 34 条观测。';renderComparisons();if(scroll)$('comparison').scrollIntoView({block:'start'});
 }
 const experience=createBonusExperience({rows:()=>state.model?.valid||[],fingerprint:()=>state.sourceHash,getView:captureView,applyView,captureOrigin:()=>({view:captureView(),saved:{...state.saved}}),restoreOrigin:origin=>{state.saved=origin.saved;applyView(origin.view);},sexComparison,announce});
+const llmAssistant=createLlmAssistant({rows:()=>state.model?.valid||[],fingerprint:()=>state.sourceHash,getView:captureView,applyView:view=>{experience.leaveGuide();applyView(view);},draft:(title,notes)=>{if(!$('notebook-title').value)$('notebook-title').value=title.slice(0,100);const previous=$('notebook-notes').value;$('notebook-notes').value=(previous+(previous?'\n\n':'')+notes).slice(0,1000);$('notebook').open=true;$('notebook-message').textContent='模型解读已写入观察草稿（最多1000字），请核对后保存。';$('notebook').scrollIntoView({block:'start'});},announce});
+
 
 
 function syncControls(){
@@ -67,7 +70,7 @@ function updateSummary(highlight=false){
   const body=$('table-body');body.replaceChildren();rows.forEach(r=>{const tr=element('tr'),first=element('td'),button=element('button',`${r.record_id} · ${name(r.species)}`);button.addEventListener('click',()=>{state.pinned=r;renderDetails();chart.pin(r.record_id);});first.append(button);tr.append(first);[r.flipper_length_mm,r.body_mass_g,r.bill_length_mm??'未记录',r.bill_depth_mm??'未记录'].forEach(v=>tr.append(element('td',v)));body.append(tr);});
   if(!rows.length){const tr=element('tr'),td=element('td','当前条件没有有效样本');td.colSpan=5;tr.append(td);body.append(tr);}
   if(state.pinned&&!state.pinned.aggregate&&!rows.some(r=>r.record_id===state.pinned.record_id))clearPinned();
-  for(const slot of ['a','b'])$(`capture-${slot}`).disabled=!rows.length;$('export-current').disabled=!rows.length;experience.render();
+  for(const slot of ['a','b'])$(`capture-${slot}`).disabled=!rows.length;$('export-current').disabled=!rows.length;experience.render();llmAssistant.render();
 }
 function renderDetails(){
   const d=state.pinned;$('detail-heading').textContent=d?d.aggregate?`${d.name} · 物种均值`:`${name(d.species)} · ${d.record_id}`:'点击气泡固定详情';$('detail-placeholder').hidden=Boolean(d);$('clear-detail').hidden=!d;$('detail-values').replaceChildren();
@@ -126,7 +129,7 @@ function startPlayback(){
 }
 
 try{
-  const response=await fetch(new URL('../EDA_企鹅数据探索/penguins.csv',import.meta.url));if(!response.ok)throw new Error(`CSV HTTP ${response.status}`);const csvText=await response.text();state.model=parsePenguins(csvText);state.sourceHash=csvFingerprint(csvText);experience.initialize();
+  const response=await fetch(new URL('../EDA_企鹅数据探索/penguins.csv',import.meta.url));if(!response.ok)throw new Error(`CSV HTTP ${response.status}`);const csvText=await response.text();state.model=parsePenguins(csvText);state.sourceHash=csvFingerprint(csvText);experience.initialize();llmAssistant.initialize();
   SPECIES.forEach(s=>{const label=element('label');label.className='continent-option';const input=element('input');input.type='checkbox';input.name='species';input.value=s.id;input.checked=true;input.setAttribute('aria-label',s.name);input.addEventListener('change',()=>change(()=>state.scope.species=[...document.querySelectorAll('input[name="species"]:checked')].map(el=>el.value)));const dot=element('i');dot.className='swatch';dot.style.background=s.color;label.append(input,dot,document.createTextNode(s.name),element('small',s.id));$('species-options').append(label);const legend=element('span');const marker=element('i');marker.className='swatch';marker.style.background=s.color;legend.append(marker,document.createTextNode(s.name));$('annual-legend').append(legend);});
   $('year').addEventListener('input',e=>change(()=>{state.scope.year=+e.target.value;state.scope.allYears=false;},true));$('all-years').addEventListener('change',e=>change(()=>state.scope.allYears=e.target.checked,true));
   $('sex').addEventListener('change',e=>change(()=>state.scope.sex=e.target.value));$('island').addEventListener('change',e=>change(()=>state.scope.island=e.target.value));$('size-field').addEventListener('change',e=>change(()=>state.size=e.target.value,true));
