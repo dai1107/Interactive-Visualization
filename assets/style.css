@@ -12,3 +12,17 @@
 .bubble:hover{stroke:#203b37;stroke-width:2;filter:drop-shadow(0 2px 3px #203b3733)}
 @media(min-width:721px) and (max-width:940px){.encoding-strip{grid-template-columns:1fr}}
 @media(max-width:720px){.encoding-strip{grid-template-columns:1fr;padding:12px;gap:15px;margin-bottom:14px}.encoding-strip strong{font-size:10px}.encoding-shade svg{min-height:0}}
+
+/* Linked exploration controls and data-driven observations. */
+.explore-tools{display:flex;align-items:center;justify-content:space-between;gap:16px;margin-bottom:22px;flex-wrap:wrap}
+.plot-switch{min-width:340px;flex:1;max-width:480px}.plot-switch button{font-size:11px}
+.focus-option{font-size:10px;color:var(--muted);display:flex;align-items:center;gap:5px;white-space:nowrap}.focus-option input,.loop-option input{accent-color:var(--teal)}
+.playback-options{display:grid;grid-template-columns:1fr 1fr;gap:12px;align-items:end;margin:-10px 0 18px;grid-column:1/-1;font-size:10px;color:var(--muted)}
+.playback-options select{padding:5px;margin-top:5px;font-size:10px}.loop-option{display:flex;align-items:center;gap:3px;white-space:nowrap;padding-bottom:6px}
+.observation-panel{background:white;border:1px solid var(--line);padding:24px 27px;margin-top:22px}
+#observation-copy{font-size:12px;line-height:1.9;color:var(--muted);margin:14px 0 18px}.observation-panel>.hint{margin-bottom:0}
+.species-summary{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:14px}
+.species-card{position:relative;text-align:left;border:1px solid var(--line);border-left:3px solid var(--species-color);background:#f8faf6;padding:15px;color:var(--ink);transition:background .15s,transform .15s}
+.species-card:hover,.species-card:focus-visible{background:#edf4ee;transform:translateY(-2px)}.species-card strong{display:block;font-size:14px;margin-bottom:9px}.species-card span{display:block;font-size:15px;font-variant-numeric:tabular-nums}.species-card small{display:block;font-size:10px;line-height:1.8;color:var(--muted);margin-top:8px}
+@media(max-width:940px){.plot-switch{min-width:260px;max-width:none}.focus-option{font-size:10px}.species-card{padding:12px}.species-card small{font-size:9px}}
+@media(max-width:720px){.explore-tools{gap:12px}.plot-switch{min-width:0;width:100%;flex-basis:100%}.plot-switch button{font-size:10px;padding:10px 5px}.observation-panel{padding:20px 14px;margin-top:15px}.species-summary{grid-template-columns:1fr;gap:10px}.species-card span{font-size:14px}.species-card small{font-size:10px}.observation-panel>.chart-top{align-items:flex-start}#observation-copy{font-size:11px}}
