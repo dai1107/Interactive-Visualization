@@ -7,11 +7,11 @@
   <meta name="theme-color" content="#f5f4ef">
   <title>鳍长与体重 · Palmer 企鹅探索</title>
   <link rel="icon" href="assets/favicon.svg" type="image/svg+xml">
-  <link rel="stylesheet" href="assets/style.css">
+  <link rel="stylesheet" href="assets/style.css?v=20261111-compare">
   <script defer src="vendor/vega.min.js"></script>
   <script defer src="vendor/vega-lite.min.js"></script>
   <script defer src="vendor/vega-embed.min.js"></script>
-  <script type="module" src="assets/app.js"></script>
+  <script type="module" src="assets/app.js?v=20261111-compare"></script>
 </head>
 <body>
   <a class="skip" href="#explorer">跳到交互图表</a>
@@ -34,13 +34,18 @@
             <button type="button" id="select-all" class="text-button">全选物种</button>
           </div></fieldset>
           <fieldset id="sex-controls" disabled><legend>02 <span>性别</span></legend><label class="sr-only" for="sex">选择性别</label><select id="sex"><option value="all">全部（含未记录）</option><option value="female">雌性</option><option value="male">雄性</option><option value="unknown">未记录</option></select></fieldset>
-          <button type="button" id="reset" class="reset" disabled><span aria-hidden="true">↺</span> 重置全部</button>
+          <button type="button" id="reset" class="reset" disabled><span aria-hidden="true">↺</span> 重置筛选</button>
         </form>
 
         <div id="load-state" class="load-state" role="status"><span id="load-message">正在加载企鹅数据…</span><button id="retry" type="button" hidden>重新加载</button></div>
         <div class="selection-status"><p id="condition-summary" role="status" aria-atomic="true">等待数据加载</p><p id="notice" role="status"></p></div>
         <div class="brush-toolbar"><p>从图中空白处拖动框选多条记录，比较局部与整体。</p><button type="button" id="clear-brush" class="text-button" disabled>清除框选</button></div>
         <details class="range-disclosure"><summary>用数值范围框选 <span>键盘与触屏可用</span></summary><form id="range-form"><fieldset id="range-controls" disabled><legend class="sr-only">设置鳍长和体重的框选范围</legend><label>鳍长下限 mm<input id="flipper-min" type="number" min="170" max="235" step="any" value="170" required></label><label>鳍长上限 mm<input id="flipper-max" type="number" min="170" max="235" step="any" value="235" required></label><label>体重下限 g<input id="mass-min" type="number" min="2500" max="6500" step="any" value="2500" required></label><label>体重上限 g<input id="mass-max" type="number" min="2500" max="6500" step="any" value="6500" required></label><button type="submit" class="range-apply">应用范围</button></fieldset><p id="range-error" role="alert"></p></form></details>
+        <div class="exploration-tools">
+          <fieldset id="trend-controls" class="trend-controls" disabled><legend>读懂关系</legend><label for="trend-mode">趋势线</label><select id="trend-mode"><option value="none">隐藏趋势线</option><option value="overall">只看整体</option><option value="species">按物种分别看</option><option value="both" selected>整体与物种叠加</option></select></fieldset>
+          <div class="capture-tools" role="group" aria-label="保留当前样本用于对比"><span id="capture-count">等待数据加载</span><button id="capture-a" class="slot-button slot-a" type="button" disabled>存为 A</button><button id="capture-b" class="slot-button slot-b" type="button" disabled>存为 B</button><button id="view-comparison" class="text-button" type="button" disabled>查看对比 ↓</button></div>
+        </div>
+        <p id="trend-note" class="trend-note">虚线表示整体趋势，实线按物种着色；趋势线随当前筛选和框选更新。</p>
         <div class="analysis-layout">
           <div class="chart-panel">
             <div class="chart-heading"><span>鳍长 × 体重</span><label class="annotation-toggle"><input id="show-annotations" type="checkbox" checked disabled>标注物种均值</label></div>
@@ -57,6 +62,26 @@
         </div>
 
         <section class="observation" aria-labelledby="observation-title"><div><span class="eyebrow">当前观察</span><span id="scope-badge" class="scope-badge">等待数据</span></div><h3 id="observation-title">先从全部样本开始</h3><p id="observation-text" role="status">数据加载成功后，这里的说明会随筛选和框选实时更新。</p></section>
+
+        <section id="compare-workspace" class="compare-workspace" aria-labelledby="compare-heading">
+          <div class="compare-heading"><div><p class="eyebrow">保留条件 · 同时比较</p><h3 id="compare-heading">这一组和那一组，差在哪里？</h3></div><button id="compare-preset" type="button" class="compare-preset" disabled>试试：帽带雌雄对比 ↗</button></div>
+          <p id="comparison-status" class="comparison-status" role="status">先筛选或框选，存为 A；再改变条件，存为 B。</p>
+          <div class="compare-grid">
+            <article class="compare-card slot-a" aria-labelledby="compare-a-heading">
+              <header><h4 id="compare-a-heading"><span class="slot-label">A</span> 第一组</h4><button id="clear-a" class="text-button" type="button" disabled>清除 A</button></header>
+              <p id="compare-a-empty" class="compare-empty">先在上方筛选或框选，再点击“存为 A”。</p>
+              <div id="compare-a-content" hidden><p id="compare-a-scope" class="compare-scope"></p><dl class="compare-metrics"><div><dt>样本 n</dt><dd id="compare-a-n"></dd></div><div><dt>相关 r</dt><dd id="compare-a-r"></dd></div><div><dt>平均体重</dt><dd id="compare-a-mass"></dd></div><div><dt>平均鳍长</dt><dd id="compare-a-flipper"></dd></div></dl><div id="compare-a-chart" class="saved-chart" aria-label="A 组的鳍长体重散点图和整体趋势线"></div></div>
+              <div class="compare-card-actions"><button id="replace-a" type="button" disabled>用当前样本存为 A</button><button id="restore-a" type="button" disabled>返回 A 继续探索</button></div>
+            </article>
+            <article class="compare-card slot-b" aria-labelledby="compare-b-heading">
+              <header><h4 id="compare-b-heading"><span class="slot-label">B</span> 第二组</h4><button id="clear-b" class="text-button" type="button" disabled>清除 B</button></header>
+              <p id="compare-b-empty" class="compare-empty">调整条件后存为 B，A 组会一直保留。</p>
+              <div id="compare-b-content" hidden><p id="compare-b-scope" class="compare-scope"></p><dl class="compare-metrics"><div><dt>样本 n</dt><dd id="compare-b-n"></dd></div><div><dt>相关 r</dt><dd id="compare-b-r"></dd></div><div><dt>平均体重</dt><dd id="compare-b-mass"></dd></div><div><dt>平均鳍长</dt><dd id="compare-b-flipper"></dd></div></dl><div id="compare-b-chart" class="saved-chart" aria-label="B 组的鳍长体重散点图和整体趋势线"></div></div>
+              <div class="compare-card-actions"><button id="replace-b" type="button" disabled>用当前样本存为 B</button><button id="restore-b" type="button" disabled>返回 B 继续探索</button></div>
+            </article>
+          </div>
+          <div id="comparison-results" class="comparison-results" hidden><p id="comparison-delta" class="comparison-delta"></p><div class="compare-distribution-heading"><h4>把体重分布放在一起看</h4><span><i class="compare-key key-a" aria-hidden="true"></i>A 组 <i class="compare-key key-b" aria-hidden="true"></i>B 组</span></div><div id="compare-distribution" aria-label="A 组和 B 组体重分布的组内占比比较"></div><p class="compare-footnote">两组散点图使用相同坐标，散点颜色表示物种；虚线为各组整体趋势。分布按各组人数换算占比，便于比较不同大小的样本。差异仅作描述，不代表显著性检验。</p><button id="export-comparison" class="text-button" type="button" disabled>下载 A / B 对比数据 CSV ↓</button></div>
+        </section>
 
         <section class="linked-section" aria-labelledby="linked-heading"><div class="linked-heading"><div><p class="eyebrow">框选联动 · 局部与基准</p><h3 id="linked-heading">选中的企鹅，更重一些吗？</h3></div><p id="brush-summary" role="status" aria-atomic="true">尚未框选；下图显示当前筛选的体重分布。</p></div><div class="linked-layout"><div class="distribution-panel"><div class="distribution-legend"><span><i class="baseline-key" aria-hidden="true"></i>筛选基准</span><span><i class="subset-key" aria-hidden="true"></i>框选子集</span><span>每格 250 g · 同一计数尺度</span></div><div id="mass-chart" aria-label="筛选基准与框选子集的体重分布直方图"></div><details class="bin-disclosure"><summary>查看分箱计数</summary><div class="table-scroll"><table><caption class="sr-only">体重分布的相同分箱及各自记录数</caption><thead><tr><th scope="col">体重区间 g</th><th scope="col">基准 n</th><th scope="col">框选 n</th></tr></thead><tbody id="bin-rows"></tbody></table></div></details></div><div class="benchmark-panel"><h4>与当前筛选基准比较</h4><div class="table-scroll"><table class="benchmark-table"><caption class="sr-only">筛选基准与框选子集的统计对比</caption><thead><tr><th scope="col">范围</th><th scope="col">样本 n</th><th scope="col">均重 g</th><th scope="col">相关 r</th></tr></thead><tbody id="benchmark-stats"></tbody></table></div><p id="benchmark-difference">拖动框选或输入数值范围，查看子集的统计与占比。</p><p class="selection-caveat">框选会限制变量范围，局部相关系数仅描述所选样本；不能据此判断差异具有统计显著性。</p></div></div></section>
 

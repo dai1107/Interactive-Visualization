@@ -4,7 +4,7 @@ import json
 import sys
 from html.parser import HTMLParser
 from pathlib import Path
-from urllib.parse import quote, urljoin
+from urllib.parse import quote, urljoin, urlsplit, unquote
 from urllib.request import Request, urlopen
 
 ROOT = Path(__file__).resolve().parents[1]
@@ -13,7 +13,7 @@ ROOT = Path(__file__).resolve().parents[1]
 class References(HTMLParser):
     def __init__(self):
         super().__init__()
-        self.paths = {'assets/data.js', 'assets/chart.js'}
+        self.paths = {'assets/data.js', 'assets/chart.js', 'assets/analysis.js', 'assets/compare.js'}
 
     def handle_starttag(self, tag, attrs):
         for key, value in attrs:
@@ -29,7 +29,8 @@ def main():
     references.feed((ROOT / 'index.html').read_text(encoding='utf-8'))
     checked = []
     for relative in sorted(references.paths):
-        local = ROOT / ('index.html' if relative == './' else relative)
+        resource_path = unquote(urlsplit(relative).path)
+        local = ROOT / ('index.html' if resource_path == './' else resource_path)
         if not local.resolve().is_relative_to(ROOT.resolve()):
             raise SystemExit('Unexpected resource outside project.')
         url = quote(urljoin(base, relative), safe=':/?=&%')
@@ -40,7 +41,7 @@ def main():
             content_type = response.headers.get_content_type()
         if hashlib.sha256(data).digest() != hashlib.sha256(local.read_bytes()).digest():
             raise SystemExit(f'Deployed resource does not match the checkout: {relative}')
-        if relative.endswith('.js') and content_type not in ('application/javascript', 'text/javascript'):
+        if resource_path.endswith('.js') and content_type not in ('application/javascript', 'text/javascript'):
             raise SystemExit(f'Invalid module MIME type: {relative} {content_type}')
         checked.append({'path': relative, 'status': 200, 'content_type': content_type, 'bytes': len(data)})
     audit = json.loads((ROOT / 'docs/data-audit.json').read_text(encoding='utf-8'))

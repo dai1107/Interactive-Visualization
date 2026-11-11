@@ -5,6 +5,7 @@
   "type": "module",
   "scripts": {
     "test": "node --test tests/data.test.mjs",
+    "test:browser": "node tests/browser-smoke.cjs",
     "start": "python -m http.server 8000 --bind 127.0.0.1"
   }
 }

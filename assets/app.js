@@ -1,5 +1,7 @@
 import { SPECIES, SEX_LABELS, parsePenguins, filterPenguins, pearson, correlationReason, normalizeBrush, brushRows, summarize, massBins, GUIDE_STEPS, meanAnnotations, describeExploration } from './data.js';
-import { chartSpec, histogramSpec, writeBrush } from './chart.js';
+import { chartSpec, histogramSpec, writeBrush } from './chart.js?v=20261111-compare';
+import { trendSegments } from './analysis.js';
+import { createComparison } from './compare.js';
 
 const $ = id => document.getElementById(id);
 const checks = [...document.querySelectorAll('input[name="species"]')];
@@ -13,6 +15,18 @@ const sexName = sex => SEX_LABELS[sex ?? 'unknown'];
 const selection = () => checks.filter(input => input.checked).map(input => input.value);
 const currentRows = () => brushRows(state.filtered, state.range);
 const formatMean = value => value === null ? '不可计算' : value.toFixed(1);
+const comparison = createComparison({
+  getRows: currentRows,
+  getScope: () => ({ species: selection(), sex: $('sex').value, range: state.range }),
+  getAllRows: () => state.model?.valid || [],
+  restoreScope(scope) {
+    checks.forEach(input => { input.checked = scope.species.includes(input.value); });
+    $('sex').value = scope.sex; state.pinned = null; state.hover = null;
+    refresh();
+    if (scope.range) setBrush(scope.range);
+  },
+  report: message => { $('notice').textContent = message; },
+});
 
 function textCell(tag, value) {
   const element = document.createElement(tag);
@@ -33,6 +47,7 @@ function queueChart(rows = state.filtered) {
       state.view.change('points', window.vega.changeset().remove(() => true).insert(snapshot));
       state.view.change('focus', window.vega.changeset().remove(() => true).insert(highlight));
       state.view.change('annotations', window.vega.changeset().remove(() => true).insert($('show-annotations').checked ? meanAnnotations(currentRows()) : []));
+      state.view.change('trends', window.vega.changeset().remove(() => true).insert(trendSegments(currentRows(), $('trend-mode').value)));
       await state.view.runAsync();
     } finally { state.syncBrush = false; }
   }).catch(error => showFailure(error));
@@ -45,6 +60,7 @@ function updateHighlight() {
     const id = state.hover || state.pinned;
     state.view.change('focus', window.vega.changeset().remove(() => true).insert(currentRows().filter(row => row.record_id === id)));
     state.view.change('annotations', window.vega.changeset().remove(() => true).insert($('show-annotations').checked ? meanAnnotations(currentRows()) : []));
+    state.view.change('trends', window.vega.changeset().remove(() => true).insert(trendSegments(currentRows(), $('trend-mode').value)));
     await state.view.runAsync();
   }).catch(error => showFailure(error));
 }
@@ -107,6 +123,12 @@ function renderStory() {
   $('count-caption').textContent = state.range ? `基准 ${state.filtered.length} 条 · 框选 ${n} 条` : `${n} 条基准记录`;
   renderAnnotationLegend();
   renderGuide();
+  comparison.updateCurrent(Boolean(state.model) && !state.loading);
+  const mode = $('trend-mode').value;
+  const lines = trendSegments(currentRows(), mode).length / 2;
+  const key = mode === 'overall' ? '虚线：整体。' : mode === 'species' ? '实线：按物种着色。' : '虚线：整体；实线：按物种着色。';
+  const singleSpecies = new Set(currentRows().map(row => row.species)).size === 1;
+  $('trend-note').textContent = mode === 'none' ? '趋势线已隐藏。可切换整体、分物种或叠加模式，比较同一组点的不同关系。' : !lines ? '当前范围不足 3 条记录或鳍长没有变化，暂不显示趋势线。' : `当前${state.range ? '框选' : '筛选'}范围绘制 ${lines} 条趋势线。${key}${mode === 'both' && singleSpecies ? '当前只有一个物种，两种趋势重合。' : ''}仅覆盖实际观测到的鳍长范围。`;
 }
 
 function renderAnnotationLegend() {
@@ -256,6 +278,8 @@ function setControls(enabled) {
   $('range-controls').disabled = !enabled || !state.filtered.length;
   $('clear-brush').disabled = !enabled || !state.range;
   $('show-annotations').disabled = !enabled;
+  $('trend-controls').disabled = !enabled;
+  comparison.updateCurrent(enabled);
   document.querySelectorAll('[data-guide]').forEach(button => { button.disabled = !enabled; });
   $('guide-prev').disabled = !enabled;
   $('guide-next').disabled = !enabled;
@@ -277,6 +301,7 @@ function showFailure(error) {
   $('mass-chart').replaceChildren();
   state.range = null; state.revision++;
   state.model = null; state.filtered = []; state.pinned = null; state.hover = null;
+  comparison.reset();
   state.guideStep = null;
   $('sample-count').textContent = '—'; $('correlation').textContent = '—';
   $('sample-base').textContent = '等待数据重新加载';
@@ -347,6 +372,7 @@ $('data-disclosure').addEventListener('toggle', renderRecords);
 $('retry').addEventListener('click', () => { if (!window.vegaEmbed) window.location.reload(); else load(); });
 $('clear-brush').addEventListener('click', () => setBrush(null));
 $('show-annotations').addEventListener('change', () => { renderAnnotationLegend(); updateHighlight(); });
+$('trend-mode').addEventListener('change', () => { renderStory(); updateHighlight(); });
 for (const [index, step] of GUIDE_STEPS.entries()) {
   const button = document.createElement('button');
   button.type = 'button'; button.dataset.guide = step.id; button.disabled = true;

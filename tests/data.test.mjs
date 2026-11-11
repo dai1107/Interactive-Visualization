@@ -4,12 +4,70 @@ import { readFileSync } from 'node:fs';
 import { createHash } from 'node:crypto';
 import vm from 'node:vm';
 import { parsePenguins, filterPenguins, pearson, SPECIES, normalizeBrush, brushRows, summarize, massBins, GUIDE_STEPS, meanAnnotations, describeExploration } from '../assets/data.js';
-import { chartSpec, histogramSpec, writeBrush } from '../assets/chart.js';
+import { chartSpec, histogramSpec, writeBrush, comparisonScatterSpec, comparisonHistogramSpec } from '../assets/chart.js';
+import { linearFit, trendSegments, captureSelection, comparisonSummary, comparisonBins, overlapCount } from '../assets/analysis.js';
 
 const csv = readFileSync(new URL('../EDA_企鹅数据探索/penguins.csv', import.meta.url), 'utf8');
 const audit = JSON.parse(readFileSync(new URL('../docs/data-audit.json', import.meta.url), 'utf8'));
 const model = parsePenguins(csv);
 const close = (actual, expected) => assert.ok(Math.abs(actual - expected) < 1e-12, `${actual} != ${expected}`);
+
+test('least-squares trends recover an analytic line and never extrapolate or fit a constant x', () => {
+  const rows = [180, 190, 200].map(x => ({ flipper_length_mm: x, body_mass_g: 20 * x + 100 }));
+  const fit = linearFit(rows);
+  close(fit.slope, 20); close(fit.intercept, 100);
+  assert.deepEqual(fit.extent, [180, 200]);
+  assert.equal(linearFit(rows.slice(0, 2)), null);
+  assert.equal(linearFit(rows.map(row => ({ ...row, flipper_length_mm: 180 }))), null);
+  assert.equal(linearFit(rows.map(row => ({ ...row, body_mass_g: 3500 }))).slope, 0);
+  assert.equal(trendSegments(model.valid, 'both').length, 8);
+  assert.equal(trendSegments(model.valid, 'overall').length, 2);
+  assert.equal(trendSegments(model.valid, 'species').length, 6);
+  assert.deepEqual(trendSegments(model.valid, 'none'), []);
+  const female = filterPenguins(model.valid, ['Chinstrap'], 'female');
+  for (const point of trendSegments(female, 'both')) {
+    assert.ok(point.flipper_length_mm >= 178 && point.flipper_length_mm <= 202);
+    assert.ok(['overall', 'Chinstrap'].includes(point.series));
+  }
+});
+
+test('saved comparisons own their records and filter ranges, preserving overlap and empty statistics', () => {
+  const rows = model.valid.slice(0, 4).map(row => ({ ...row }));
+  const scope = { species: ['Adelie'], sex: 'all', range: { flipper_length_mm: [180, 200], body_mass_g: [3000, 4000] } };
+  const saved = captureSelection(rows, scope), expected = saved.rows[0].body_mass_g;
+  rows[0].body_mass_g = 9999; rows.pop(); scope.species.push('Gentoo'); scope.range.flipper_length_mm[0] = 170;
+  assert.equal(saved.rows.length, 4); assert.equal(saved.rows[0].body_mass_g, expected);
+  assert.deepEqual(saved.scope.species, ['Adelie']); assert.equal(saved.scope.range.flipper_length_mm[0], 180);
+  assert.equal(overlapCount(saved.rows, saved.rows.slice(0, 2)), 2);
+  assert.equal(comparisonSummary([]).meanFlipper, null);
+  assert.equal(comparisonSummary(model.valid).n, 342);
+  const a = filterPenguins(model.valid, ['Chinstrap'], 'female'), b = filterPenguins(model.valid, ['Chinstrap'], 'male');
+  assert.equal(overlapCount(a, b), 0);
+  const bins = comparisonBins(a, b);
+  close(bins.reduce((sum, bin) => sum + bin.a_share, 0), 1);
+  close(bins.reduce((sum, bin) => sum + bin.b_share, 0), 1);
+  assert.ok(comparisonBins([], []).every(bin => bin.a_share === 0 && bin.b_share === 0));
+});
+
+test('comparison views keep shared coordinates, actual trends and normalized distributions in rendered SVG', async () => {
+  const context = vm.createContext({ console, setTimeout, clearTimeout, setInterval, clearInterval, structuredClone });
+  for (const library of ['vega', 'vega-lite']) vm.runInContext(readFileSync(new URL(`../vendor/${library}.min.js`, import.meta.url), 'utf8'), context);
+  const createView = spec => new context.vega.View(context.vega.parse(context.vegaLite.compile(spec).spec), { renderer: 'none' });
+  const view = createView(comparisonScatterSpec(500)), histogram = createView(comparisonHistogramSpec(500));
+  const female = filterPenguins(model.valid, ['Chinstrap'], 'female');
+  view.change('points', context.vega.changeset().insert(female));
+  view.change('trends', context.vega.changeset().insert(trendSegments(female, 'overall')));
+  await view.runAsync();
+  assert.equal(view.data('points').length, 34); assert.equal(view.data('trends').length, 2);
+  assert.deepEqual(Array.from(view.scale('x').domain()), [170, 235]);
+  assert.deepEqual(Array.from(view.scale('y').domain()), [2500, 6500]);
+  const svg = await view.toSVG();
+  assert.ok(svg.includes('stroke-dasharray="7,5"') && svg.includes('stroke="#243c38"'));
+  histogram.change('distribution', context.vega.changeset().insert(comparisonBins(female, model.valid)));
+  await histogram.runAsync();
+  assert.ok((await histogram.toSVG()).includes('组内占比'));
+  view.finalize(); histogram.finalize();
+});
 
 test('original CSV, missing-value handling and stable record identities match independent Python audit', () => {
   assert.equal(createHash('sha256').update(csv).digest('hex'), audit.sha256);
