@@ -4,7 +4,7 @@
 
 本次版本参照 GDP 与寿命页面的布局，采用左侧筛选、上方统计、右侧主图、下方年度图与明细。主图只保留气泡，取消回归线与均值菱形的叠加。新增真实年份切换和播放、物种均值气泡、气泡面积图例、岛屿筛选。A/B 对比默认收起。
 
-原发布地址：[GitHub Pages](https://dai1107.github.io/Interactive-Visualization/)。本地重做版本尚待获得仓库写入权限后发布，不能将此链接当作本地新版本的验收结果。仓库：[dai1107/Interactive-Visualization](https://github.com/dai1107/Interactive-Visualization)。
+发布地址：[GitHub Pages](https://dai1107.github.io/Interactive-Visualization/)。仓库：[dai1107/Interactive-Visualization](https://github.com/dai1107/Interactive-Visualization)。Pages 从 `main` 分支根目录发布，使用下方资源核验脚本确认线上版本与源码一致。
 
 ## 主要交互
 
