@@ -13,15 +13,15 @@ def build(destination):
     css = (ROOT / 'assets/style.css').read_text(encoding='utf-8')
     csv = (ROOT / 'EDA_企鹅数据探索/penguins.csv').read_text(encoding='utf-8')
     modules = []
-    for filename in ['data.js', 'bubble-model.js', 'bubble-chart.js', 'bubble-app.js']:
+    for filename in ['data.js', 'bubble-model.js', 'bubble-chart.js', 'bonus-model.js', 'bonus-charts.js', 'bonus-experience.js', 'bubble-app.js']:
         source = (ROOT / 'assets' / filename).read_text(encoding='utf-8')
         source = re.sub(r'^import .+?;\s*$', '', source, flags=re.M)
         source = re.sub(r'^export ', '', source, flags=re.M)
         if filename == 'bubble-app.js':
-            loader = "const response=await fetch(new URL('../EDA_企鹅数据探索/penguins.csv',import.meta.url));if(!response.ok)throw new Error(`CSV HTTP ${response.status}`);state.model=parsePenguins(await response.text());"
+            loader = "const response=await fetch(new URL('../EDA_企鹅数据探索/penguins.csv',import.meta.url));if(!response.ok)throw new Error(`CSV HTTP ${response.status}`);const csvText=await response.text();state.model=parsePenguins(csvText);state.sourceHash=csvFingerprint(csvText);experience.initialize();"
             if loader not in source:
                 raise RuntimeError('App CSV loader changed; update this bundler before continuing.')
-            source = source.replace(loader, 'state.model=parsePenguins(' + json.dumps(csv, ensure_ascii=False) + ');')
+            source = source.replace(loader, 'const csvText=' + json.dumps(csv, ensure_ascii=False) + ';state.model=parsePenguins(csvText);state.sourceHash=csvFingerprint(csvText);experience.initialize();')
         modules.append(source)
     javascript = '\n'.join(modules).replace('</script', '<\\/script')
     html, styles = re.subn(r'<link rel="stylesheet" href="assets/style\.css[^\"]*">', lambda _: '<style>' + css + '</style>', html)

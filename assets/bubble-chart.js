@@ -1,5 +1,5 @@
 import { SPECIES } from './data.js';
-import { BUBBLE_FIELDS, PLOT_VIEWS, bubbleRadius, shadeFraction, speciesBubbles } from './bubble-model.js?v=explore-20261111c';
+import { BUBBLE_FIELDS, PLOT_VIEWS, bubbleRadius, shadeFraction, speciesBubbles } from './bubble-model.js?v=bonus-20261112d';
 const d3 = window.d3;
 export const COLOR = Object.fromEntries(SPECIES.map(s => [s.id,s.color]));
 
