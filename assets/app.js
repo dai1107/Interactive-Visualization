@@ -1,9 +1,9 @@
-import { SPECIES, SEX_LABELS, parsePenguins, filterPenguins, pearson, correlationReason, normalizeBrush, brushRows, summarize, massBins } from './data.js';
+import { SPECIES, SEX_LABELS, parsePenguins, filterPenguins, pearson, correlationReason, normalizeBrush, brushRows, summarize, massBins, GUIDE_STEPS, meanAnnotations, describeExploration } from './data.js';
 import { chartSpec, histogramSpec, writeBrush } from './chart.js';
 
 const $ = id => document.getElementById(id);
 const checks = [...document.querySelectorAll('input[name="species"]')];
-const state = { model: null, filtered: [], view: null, histogram: null, range: null, syncBrush: false, revision: 0, pinned: null, hover: null, loading: false, pointer: null, dragged: false };
+const state = { model: null, filtered: [], view: null, histogram: null, range: null, syncBrush: false, revision: 0, pinned: null, hover: null, loading: false, pointer: null, dragged: false, guideStep: null };
 let renderQueue = Promise.resolve();
 let resizeTimer;
 const dataURL = new URL('../EDA_企鹅数据探索/penguins.csv', import.meta.url);
@@ -32,6 +32,7 @@ function queueChart(rows = state.filtered) {
       writeBrush(state.view, null);
       state.view.change('points', window.vega.changeset().remove(() => true).insert(snapshot));
       state.view.change('focus', window.vega.changeset().remove(() => true).insert(highlight));
+      state.view.change('annotations', window.vega.changeset().remove(() => true).insert($('show-annotations').checked ? meanAnnotations(currentRows()) : []));
       await state.view.runAsync();
     } finally { state.syncBrush = false; }
   }).catch(error => showFailure(error));
@@ -43,6 +44,7 @@ function updateHighlight() {
     if (!state.view) return;
     const id = state.hover || state.pinned;
     state.view.change('focus', window.vega.changeset().remove(() => true).insert(currentRows().filter(row => row.record_id === id)));
+    state.view.change('annotations', window.vega.changeset().remove(() => true).insert($('show-annotations').checked ? meanAnnotations(currentRows()) : []));
     await state.view.runAsync();
   }).catch(error => showFailure(error));
 }
@@ -77,6 +79,53 @@ function renderRecords() {
     td.colSpan = 7; tr.append(td); fragment.append(tr);
   }
   $('record-rows').replaceChildren(fragment);
+}
+
+function renderGuide() {
+  const index = GUIDE_STEPS.findIndex(step => step.id === state.guideStep);
+  const ready = Boolean(state.model) && !state.loading;
+  document.querySelectorAll('[data-guide]').forEach(button => {
+    const active = button.dataset.guide === state.guideStep;
+    button.setAttribute('aria-pressed', String(active));
+    button.disabled = !ready;
+  });
+  $('guide-progress').textContent = index < 0 ? '自由探索' : `${String(index + 1).padStart(2, '0')} / ${GUIDE_STEPS.length}`;
+  $('guide-prompt').textContent = index < 0 ? '自由调整筛选或框选。想比较一条完整路径时，可任选上方一步开始。' : GUIDE_STEPS[index].prompt;
+  $('guide-prev').disabled = !ready || index <= 0;
+  $('guide-next').disabled = !ready || index === GUIDE_STEPS.length - 1;
+  $('guide-next').textContent = index < 0 ? '开始引导' : index === GUIDE_STEPS.length - 1 ? '已到最后一步' : '下一步';
+  $('guide-exit').disabled = !ready || index < 0;
+}
+
+function renderStory() {
+  const observation = describeExploration(state.filtered, state.range);
+  $('observation-title').textContent = observation.title;
+  $('observation-text').textContent = observation.text;
+  const n = currentRows().length;
+  $('scope-badge').textContent = state.range ? `框选子集 ${n} 条 / 基准 ${state.filtered.length} 条` : `筛选基准 ${n} 条`;
+  $('scope-badge').classList.toggle('is-brushed', Boolean(state.range));
+  $('count-caption').textContent = state.range ? `基准 ${state.filtered.length} 条 · 框选 ${n} 条` : `${n} 条基准记录`;
+  renderAnnotationLegend();
+  renderGuide();
+}
+
+function renderAnnotationLegend() {
+  const enabled = $('show-annotations').checked;
+  const hasMeans = meanAnnotations(currentRows()).length > 0;
+  $('annotation-key').hidden = !enabled || !hasMeans;
+  $('annotation-note').textContent = !enabled ? '均值标注已隐藏，个体数据与统计不变。' : hasMeans ? '菱形：当前探索范围内的物种均值（n≥3）' : '当前范围内各物种不足 3 条，暂不标注均值。';
+}
+
+function applyGuide(id) {
+  if (!state.model || state.loading) return;
+  const step = GUIDE_STEPS.find(item => item.id === id);
+  if (!step) return;
+  checks.forEach(input => { input.checked = step.species.includes(input.value); });
+  $('sex').value = step.sex;
+  state.pinned = null; state.hover = null; state.dragged = false;
+  refresh({ guideId: step.id });
+  if (step.range) setBrush(step.range, { guideId: step.id });
+  $('notice').textContent = `已切换到“${step.title}”；你仍可自由调整条件。`;
 }
 
 function renderGroups() {
@@ -140,33 +189,33 @@ function renderLinked() {
   }).catch(error => showFailure(error));
 }
 
-function commitBrush(value) {
+function commitBrush(value, { guideId = null } = {}) {
   const range = normalizeBrush(value);
   if (JSON.stringify(range) === JSON.stringify(state.range)) return;
-  state.range = range; state.hover = null; $('range-error').textContent = '';
+  state.range = range; state.guideStep = guideId; state.hover = null; $('range-error').textContent = '';
   if (state.pinned && !currentRows().some(row => row.record_id === state.pinned)) {
     state.pinned = null;
     $('notice').textContent = '原记录不在当前框选范围，已清除固定详情。';
   }
-  renderLinked(); renderGroups(); renderRecords(); renderDetails(); updateHighlight();
+  renderLinked(); renderGroups(); renderRecords(); renderDetails(); renderStory(); updateHighlight();
 }
 
-function setBrush(range) {
+function setBrush(range, { guideId = null } = {}) {
   const revision = state.revision;
   renderQueue = renderQueue.then(async () => {
     if (!state.view || revision !== state.revision) return;
     state.syncBrush = true;
     try { writeBrush(state.view, range); await state.view.runAsync(); }
     finally { state.syncBrush = false; }
-    commitBrush(state.view.signal('region'));
+    commitBrush(state.view.signal('region'), { guideId: state.guideStep === guideId ? guideId : null });
   }).catch(error => showFailure(error));
 }
 
-function refresh() {
+function refresh({ guideId = null } = {}) {
   if (!state.model || state.loading) return;
   const species = selection(), sex = $('sex').value;
   const hadRange = Boolean(state.range);
-  state.revision++; state.range = null;
+  state.revision++; state.range = null; state.guideStep = guideId;
   state.filtered = filterPenguins(state.model.valid, species, sex);
   state.hover = null;
   $('notice').textContent = hadRange ? '筛选条件已更新，框选已清除；比较基准随之更新。' : '';
@@ -190,7 +239,7 @@ function refresh() {
   $('empty-message').textContent = species.length ? '试试其他性别，或重置全部条件。' : '勾选上方的物种，或点击下方按钮恢复全选。';
   $('empty-all').textContent = species.length ? '重置全部条件' : '全选物种';
 
-  renderLinked(); renderGroups(); renderRecords(); renderDetails();
+  renderLinked(); renderGroups(); renderRecords(); renderDetails(); renderStory();
   queueChart();
 }
 
@@ -206,6 +255,12 @@ function setControls(enabled) {
   $('reset').disabled = !enabled;
   $('range-controls').disabled = !enabled || !state.filtered.length;
   $('clear-brush').disabled = !enabled || !state.range;
+  $('show-annotations').disabled = !enabled;
+  document.querySelectorAll('[data-guide]').forEach(button => { button.disabled = !enabled; });
+  $('guide-prev').disabled = !enabled;
+  $('guide-next').disabled = !enabled;
+  $('guide-exit').disabled = !enabled;
+  if (enabled) renderGuide();
 }
 
 function showFailure(error) {
@@ -222,6 +277,7 @@ function showFailure(error) {
   $('mass-chart').replaceChildren();
   state.range = null; state.revision++;
   state.model = null; state.filtered = []; state.pinned = null; state.hover = null;
+  state.guideStep = null;
   $('sample-count').textContent = '—'; $('correlation').textContent = '—';
   $('sample-base').textContent = '等待数据重新加载';
   $('correlation-note').textContent = ''; $('notice').textContent = '';
@@ -231,6 +287,10 @@ function showFailure(error) {
   $('brush-summary').textContent = '等待数据重新加载';
   $('benchmark-difference').textContent = '数据加载成功后可进行框选比较。';
   $('count-caption').textContent = '— 条有效记录'; $('table-count').textContent = '';
+  $('observation-title').textContent = '等待数据重新加载';
+  $('observation-text').textContent = '数据加载成功后将恢复随筛选更新的观察说明。';
+  $('scope-badge').textContent = '等待数据';
+  renderGuide();
   renderDetails();
 }
 
@@ -274,8 +334,8 @@ async function load() {
 }
 
 $('filters').addEventListener('submit', event => event.preventDefault());
-checks.forEach(input => input.addEventListener('change', refresh));
-$('sex').addEventListener('change', refresh);
+checks.forEach(input => input.addEventListener('change', () => refresh()));
+$('sex').addEventListener('change', () => refresh());
 $('select-all').addEventListener('click', () => { checks.forEach(input => { input.checked = true; }); refresh(); });
 $('reset').addEventListener('click', reset);
 $('empty-all').addEventListener('click', () => {
@@ -286,6 +346,24 @@ $('clear-detail').addEventListener('click', () => { state.pinned = null; state.h
 $('data-disclosure').addEventListener('toggle', renderRecords);
 $('retry').addEventListener('click', () => { if (!window.vegaEmbed) window.location.reload(); else load(); });
 $('clear-brush').addEventListener('click', () => setBrush(null));
+$('show-annotations').addEventListener('change', () => { renderAnnotationLegend(); updateHighlight(); });
+for (const [index, step] of GUIDE_STEPS.entries()) {
+  const button = document.createElement('button');
+  button.type = 'button'; button.dataset.guide = step.id; button.disabled = true;
+  button.setAttribute('aria-pressed', 'false');
+  button.append(textCell('span', String(index + 1).padStart(2, '0')), document.createTextNode(step.title));
+  button.addEventListener('click', () => applyGuide(step.id));
+  $('guide-steps').append(button);
+}
+$('guide-prev').addEventListener('click', () => {
+  const index = GUIDE_STEPS.findIndex(step => step.id === state.guideStep);
+  if (index > 0) applyGuide(GUIDE_STEPS[index - 1].id);
+});
+$('guide-next').addEventListener('click', () => {
+  const index = GUIDE_STEPS.findIndex(step => step.id === state.guideStep);
+  if (index < GUIDE_STEPS.length - 1) applyGuide(GUIDE_STEPS[index + 1].id);
+});
+$('guide-exit').addEventListener('click', () => { state.guideStep = null; renderGuide(); $('notice').textContent = '已进入自由探索，当前筛选与框选保留。'; });
 $('range-form').addEventListener('submit', event => {
   event.preventDefault();
   const x = [$('flipper-min').valueAsNumber, $('flipper-max').valueAsNumber];
@@ -321,7 +399,7 @@ const chartObserver = new ResizeObserver(() => {
         await state.view.runAsync();
         writeBrush(state.view, range); await state.view.runAsync();
       } finally { state.syncBrush = false; }
-      commitBrush(state.view.signal('region'));
+      commitBrush(state.view.signal('region'), { guideId: state.guideStep });
       if (state.histogram) {
         state.histogram.width(Math.max(230, Math.floor($('mass-chart').getBoundingClientRect().width))).resize();
         await state.histogram.runAsync();

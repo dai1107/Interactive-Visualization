@@ -3,7 +3,7 @@ import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
 import { createHash } from 'node:crypto';
 import vm from 'node:vm';
-import { parsePenguins, filterPenguins, pearson, SPECIES, normalizeBrush, brushRows, summarize, massBins } from '../assets/data.js';
+import { parsePenguins, filterPenguins, pearson, SPECIES, normalizeBrush, brushRows, summarize, massBins, GUIDE_STEPS, meanAnnotations, describeExploration } from '../assets/data.js';
 import { chartSpec, histogramSpec, writeBrush } from '../assets/chart.js';
 
 const csv = readFileSync(new URL('../EDA_企鹅数据探索/penguins.csv', import.meta.url), 'utf8');
@@ -162,4 +162,62 @@ test('native brush, point highlighting, linked histogram and resized range agree
   assert.equal(visit(scatter.scenegraph().root).filter(point => point.opacity > .5).length, 342);
   assert.ok((await histogram.toSVG()).includes('体重 / g'));
   scatter.finalize(); histogram.finalize();
+});
+
+test('the five story presets reproduce independently audited groups and the verified brush example', () => {
+  const expected = [audit.overall, audit.by_species.Chinstrap, audit.by_species_and_sex.Chinstrap.female, audit.by_species_and_sex.Chinstrap.male, { n: 144, pearson_r: 0.21839439010005007 }];
+  assert.equal(GUIDE_STEPS.length, expected.length);
+  assert.equal(new Set(GUIDE_STEPS.map(step => step.id)).size, 5);
+  for (const [index, step] of GUIDE_STEPS.entries()) {
+    const baseline = filterPenguins(model.valid, step.species, step.sex);
+    const rows = brushRows(baseline, step.range ?? null);
+    assert.equal(rows.length, expected[index].n);
+    close(pearson(rows), expected[index].pearson_r);
+  }
+});
+
+test('observation text follows the actual scope and handles missing groups and empty or small selections', () => {
+  assert.ok(describeExploration(model.valid).text.includes('0.871'));
+  assert.ok(describeExploration(model.valid).text.includes('0.468'));
+  const female = filterPenguins(model.valid, ['Chinstrap'], 'female');
+  const text = describeExploration(female).text;
+  assert.ok(text.includes('n=34') && text.includes('0.242'));
+  assert.ok(!text.includes('0.871'));
+  const range = GUIDE_STEPS.at(-1).range;
+  assert.ok(describeExploration(model.valid, range).text.includes('144 / 342'));
+  assert.ok(describeExploration(model.valid, range).text.includes('3554.0'));
+  assert.ok(describeExploration([], null).title.includes('选择'));
+  assert.ok(describeExploration(model.valid.slice(0, 2)).text.includes('不可计算'));
+  const empty = describeExploration(model.valid, { flipper_length_mm: [170, 171], body_mass_g: [2500, 2600] });
+  assert.ok(empty.title.includes('没有选中'));
+  assert.ok(!empty.text.includes('NaN'));
+});
+
+test('species-mean annotations are measured summaries, not observations, and can be cleared without changing data or scales', async () => {
+  const annotations = meanAnnotations(model.valid);
+  assert.equal(annotations.length, 3);
+  for (const entry of annotations) {
+    const rows = model.valid.filter(row => row.species === entry.species);
+    assert.equal(entry.n, rows.length);
+    close(entry.body_mass_g, summarize(rows).meanMass);
+    close(entry.flipper_length_mm, rows.reduce((sum, row) => sum + row.flipper_length_mm, 0) / rows.length);
+    assert.equal(entry.record_id, undefined);
+  }
+  assert.deepEqual(meanAnnotations(model.valid.slice(0, 2)), []);
+  const context = vm.createContext({ console, setTimeout, clearTimeout, setInterval, clearInterval, structuredClone });
+  for (const library of ['vega', 'vega-lite']) vm.runInContext(readFileSync(new URL(`../vendor/${library}.min.js`, import.meta.url), 'utf8'), context);
+  const view = new context.vega.View(context.vega.parse(context.vegaLite.compile(chartSpec(700)).spec), { renderer: 'none' });
+  view.change('points', context.vega.changeset().insert(model.valid));
+  view.change('annotations', context.vega.changeset().insert(annotations));
+  await view.runAsync();
+  assert.equal(view.data('annotations').length, 3);
+  const svg = await view.toSVG();
+  assert.ok(svg.includes('阿德利均值') && svg.includes('巴布亚均值'));
+  view.change('annotations', context.vega.changeset().remove(() => true));
+  await view.runAsync();
+  assert.equal(view.data('points').length, 342);
+  assert.equal(view.data('annotations').length, 0);
+  assert.deepEqual(Array.from(view.scale('x').domain()), [170, 235]);
+  assert.deepEqual(Array.from(view.scale('y').domain()), [2500, 6500]);
+  view.finalize();
 });

@@ -116,3 +116,47 @@ export function massBins(baseline, subset) {
   }
   return bins;
 }
+
+export const GUIDE_STEPS = [
+  { id: 'overview', title: '看全体', species: SPECIES.map(s => s.id), sex: 'all', prompt: '先看全部点群和总体 r，再留意三个物种是否聚成不同的群。' },
+  { id: 'species', title: '只看帽带', species: ['Chinstrap'], sex: 'all', prompt: '只保留帽带企鹅。比较这一步与全体样本的 r，观察组内关系和混合样本关系的区别。' },
+  { id: 'female', title: '看雌性', species: ['Chinstrap'], sex: 'female', prompt: '在同一物种内只看雌性，记下样本数与 r。下一步将使用同样坐标查看雄性。' },
+  { id: 'male', title: '看雄性', species: ['Chinstrap'], sex: 'male', prompt: '与上一步的雌性比较。两个分组的 r 不同，并不等于差异已经通过显著性检验。' },
+  { id: 'local', title: '选一片局部', species: SPECIES.map(s => s.id), sex: 'all', range: { flipper_length_mm: [180, 200], body_mass_g: [3000, 4000] }, prompt: '回到全体样本，框选一个局部。结合下方直方图，比较子集与基准的分布和均重。' },
+];
+
+export function meanAnnotations(rows) {
+  return SPECIES.flatMap(species => {
+    const group = rows.filter(row => row.species === species.id);
+    if (group.length < 3) return [];
+    return [{
+      species: species.id, n: group.length, label: `${species.name}均值`,
+      flipper_length_mm: group.reduce((sum, row) => sum + row.flipper_length_mm, 0) / group.length,
+      body_mass_g: summarize(group).meanMass,
+    }];
+  });
+}
+
+// These descriptions are calculated from the current data, never from a stored
+// story conclusion. They remain valid after filtering or clearing the brush.
+export function describeExploration(baseline, range = null) {
+  const scope = brushRows(baseline, range), stats = summarize(scope);
+  const r = value => value === null ? '不可计算' : value.toFixed(3);
+  if (!baseline.length) return { title: '先选择一组样本', text: '当前筛选没有有效记录。选择其他物种或性别，再观察点群和统计。' };
+  if (range && !scope.length) return { title: '这个范围没有选中记录', text: `基准仍有 ${baseline.length} 条记录。扩大框选范围或清除框选即可继续比较。` };
+  if (stats.n < 3 || stats.r === null) return { title: '先看样本数，再解释关系', text: `当前探索范围有 ${stats.n} 条记录，r 不可计算。${correlationReason(scope)}` };
+  if (range) {
+    const base = summarize(baseline), difference = stats.meanMass - base.meanMass;
+    return { title: '局部与整体，使用同一个基准', text: `框选 ${stats.n} / ${base.n} 条，均重 ${stats.meanMass.toFixed(1)} g，比基准 ${difference >= 0 ? '+' : ''}${difference.toFixed(1)} g；局部 r=${r(stats.r)}。框选限制了变量范围，不能据此判断差异显著。` };
+  }
+  const groups = SPECIES.map(species => ({ ...species, rows: scope.filter(row => row.species === species.id) })).filter(group => group.rows.length);
+  if (groups.length > 1) {
+    const comparisons = groups.map(group => `${group.name} ${r(pearson(group.rows))}`).join('、');
+    return { title: '把混合样本拆成物种再看', text: `当前 ${stats.n} 条样本的总体 r=${r(stats.r)}；物种内 r 分别为${comparisons}。总体关系同时包含物种间差异，试着只选一种企鹅。${correlationReason(scope)}` };
+  }
+  const group = groups[0], female = group.rows.filter(row => row.sex === 'female'), male = group.rows.filter(row => row.sex === 'male');
+  let text = `${group.name}企鹅当前 n=${stats.n}，r=${r(stats.r)}，平均体重 ${stats.meanMass.toFixed(1)} g。`;
+  if (female.length && male.length) text += `其中雌性 n=${female.length}、r=${r(pearson(female))}；雄性 n=${male.length}、r=${r(pearson(male))}。可继续切换性别比较。`;
+  else text += '这一步只描述当前分组；切换性别后，留意样本数和点群变化。';
+  return { title: '同一物种，也可以继续分组', text: text + correlationReason(scope) };
+}

@@ -25,6 +25,7 @@
 
       <section id="explorer" class="explorer" aria-labelledby="explorer-heading">
         <div class="section-heading"><h2 id="explorer-heading">观察，筛选，再比较。</h2><p>每个点是一条观测记录 · 先试着只选一种企鹅</p></div>
+        <section class="guide" aria-labelledby="guide-heading"><div class="guide-heading"><div><p class="eyebrow">一条可以随时离开的探索路径</p><h3 id="guide-heading">跟着一个问题看数据</h3></div><button id="guide-exit" type="button" class="text-button" disabled>自由探索</button></div><div id="guide-steps" class="guide-steps" role="group" aria-label="选择探索步骤"></div><div class="guide-bottom"><p id="guide-prompt" role="status">数据加载后，可任选一步开始；也可以直接使用下方筛选。</p><div class="guide-nav"><button id="guide-prev" type="button" disabled aria-label="上一个探索步骤">上一步</button><span id="guide-progress">自由探索</span><button id="guide-next" type="button" disabled>开始引导</button></div></div></section>
         <form id="filters" class="filters" aria-label="数据筛选">
           <fieldset id="species-controls" disabled><legend>01 <span>物种</span></legend><div class="species-options">
             <label class="species-option adelie"><input type="checkbox" name="species" value="Adelie" checked><span class="swatch" aria-hidden="true"></span><span>阿德利<small>Adelie</small></span></label>
@@ -42,9 +43,10 @@
         <details class="range-disclosure"><summary>用数值范围框选 <span>键盘与触屏可用</span></summary><form id="range-form"><fieldset id="range-controls" disabled><legend class="sr-only">设置鳍长和体重的框选范围</legend><label>鳍长下限 mm<input id="flipper-min" type="number" min="170" max="235" step="any" value="170" required></label><label>鳍长上限 mm<input id="flipper-max" type="number" min="170" max="235" step="any" value="235" required></label><label>体重下限 g<input id="mass-min" type="number" min="2500" max="6500" step="any" value="2500" required></label><label>体重上限 g<input id="mass-max" type="number" min="2500" max="6500" step="any" value="6500" required></label><button type="submit" class="range-apply">应用范围</button></fieldset><p id="range-error" role="alert"></p></form></details>
         <div class="analysis-layout">
           <div class="chart-panel">
-            <div class="chart-heading"><span>鳍长 × 体重</span><span class="chart-instruction">拖动框选 · 双击清除 · 点击查看</span></div>
+            <div class="chart-heading"><span>鳍长 × 体重</span><label class="annotation-toggle"><input id="show-annotations" type="checkbox" checked disabled>标注物种均值</label></div>
+            <p class="chart-instruction chart-help">空白处拖动框选 · 双击清除 · 点击圆点固定详情</p>
             <div class="chart-wrap"><div id="chart" aria-label="企鹅鳍长与体重散点图"></div><div id="empty-state" class="empty-state" hidden><strong id="empty-title">请选择至少一种企鹅</strong><p id="empty-message"></p><button type="button" id="empty-all">全选物种</button></div></div>
-            <div class="chart-bottom"><span>坐标范围保持固定，方便比较筛选前后。</span><span id="count-caption">— 条有效记录</span></div>
+            <div class="chart-bottom"><span><span id="annotation-key" class="mean-key" aria-hidden="true"></span><span id="annotation-note">菱形：当前探索范围内的物种均值（n≥3）</span></span><span id="count-caption">— 条有效记录</span></div>
           </div>
           <aside class="sidebar" aria-label="统计与个体详情">
             <div class="metrics"><div><span class="metric-label">筛选基准 <span class="metric-symbol">n</span></span><strong id="sample-count">—</strong><small id="sample-base">有效测量记录</small></div><div><span class="metric-label">基准相关 <span class="metric-symbol">r</span></span><strong id="correlation">—</strong><small>Pearson · 描述性统计</small></div></div>
@@ -53,6 +55,8 @@
             <p class="record-note">记录编号按 CSV 行序生成，<br>不代表原始个体身份。</p>
           </aside>
         </div>
+
+        <section class="observation" aria-labelledby="observation-title"><div><span class="eyebrow">当前观察</span><span id="scope-badge" class="scope-badge">等待数据</span></div><h3 id="observation-title">先从全部样本开始</h3><p id="observation-text" role="status">数据加载成功后，这里的说明会随筛选和框选实时更新。</p></section>
 
         <section class="linked-section" aria-labelledby="linked-heading"><div class="linked-heading"><div><p class="eyebrow">框选联动 · 局部与基准</p><h3 id="linked-heading">选中的企鹅，更重一些吗？</h3></div><p id="brush-summary" role="status" aria-atomic="true">尚未框选；下图显示当前筛选的体重分布。</p></div><div class="linked-layout"><div class="distribution-panel"><div class="distribution-legend"><span><i class="baseline-key" aria-hidden="true"></i>筛选基准</span><span><i class="subset-key" aria-hidden="true"></i>框选子集</span><span>每格 250 g · 同一计数尺度</span></div><div id="mass-chart" aria-label="筛选基准与框选子集的体重分布直方图"></div><details class="bin-disclosure"><summary>查看分箱计数</summary><div class="table-scroll"><table><caption class="sr-only">体重分布的相同分箱及各自记录数</caption><thead><tr><th scope="col">体重区间 g</th><th scope="col">基准 n</th><th scope="col">框选 n</th></tr></thead><tbody id="bin-rows"></tbody></table></div></details></div><div class="benchmark-panel"><h4>与当前筛选基准比较</h4><div class="table-scroll"><table class="benchmark-table"><caption class="sr-only">筛选基准与框选子集的统计对比</caption><thead><tr><th scope="col">范围</th><th scope="col">样本 n</th><th scope="col">均重 g</th><th scope="col">相关 r</th></tr></thead><tbody id="benchmark-stats"></tbody></table></div><p id="benchmark-difference">拖动框选或输入数值范围，查看子集的统计与占比。</p><p class="selection-caveat">框选会限制变量范围，局部相关系数仅描述所选样本；不能据此判断差异具有统计显著性。</p></div></div></section>
 
