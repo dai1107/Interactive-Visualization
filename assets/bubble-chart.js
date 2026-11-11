@@ -1,17 +1,27 @@
 import { SPECIES } from './data.js';
-import { areaRadius, speciesBubbles } from './bubble-model.js';
+import { BUBBLE_FIELDS, bubbleRadius, shadeFraction, speciesBubbles } from './bubble-model.js?v=encoding-20261111b';
 const d3 = window.d3;
 export const COLOR = Object.fromEntries(SPECIES.map(s => [s.id,s.color]));
+
+export function bubbleFill(row, shade = 'bill_depth_mm') {
+  if (shade === 'none') return COLOR[row.species];
+  const fraction = shadeFraction(row[shade], shade);
+  if (fraction === null) return '#aeb9b3';
+  const color = d3.hcl(COLOR[row.species]);
+  color.l = 86 - 42 * fraction;
+  color.c *= .5 + .5 * fraction;
+  return color.formatHex();
+}
 
 export function createBubbleChart(node, { onBrush = () => {}, onFocus = () => {}, tooltip = () => {}, hideTooltip = () => {} } = {}) {
   const svg=d3.select(node);
   let rows=[],options={},brush,brushLayer,sync=false,x,y,points,plot,m,width,height;
   function draw(nextRows,nextOptions={}) {
-    const previous=new Map(points?points.selectAll('circle').nodes().map(n=>[n.__data__.id,{x:+n.getAttribute('cx'),y:+n.getAttribute('cy'),r:+n.getAttribute('r')}]):[]);
+    const previous=new Map(points?points.selectAll('circle').nodes().map(n=>[n.__data__.id,{x:+n.getAttribute('cx'),y:+n.getAttribute('cy'),r:+n.getAttribute('r'),fill:n.getAttribute('fill')}]):[]);
     rows=nextRows;options=nextOptions;
     const mini=Boolean(options.mini),outerWidth=Math.max(280,Math.floor(node.parentElement.clientWidth||500)),outerHeight=mini?250:outerWidth<550?350:430;
     m={left:mini?47:57,right:22,top:28,bottom:52};width=outerWidth-m.left-m.right;height=outerHeight-m.top-m.bottom;
-    svg.attr('viewBox',`0 0 ${outerWidth} ${outerHeight}`);svg.selectAll('*').interrupt();svg.selectAll('g.frame').remove();
+    svg.attr('viewBox',`0 0 ${outerWidth} ${outerHeight}`);svg.selectAll('*').interrupt().interrupt('appearance').interrupt('fade');svg.selectAll('g.frame').remove();
     plot=svg.append('g').attr('class','frame').attr('transform',`translate(${m.left},${m.top})`);
     x=d3.scaleLinear().domain([170,235]).range([0,width]);y=d3.scaleLinear().domain([2500,6500]).range([height,0]);
     plot.append('g').attr('class','grid').call(d3.axisLeft(y).ticks(mini?4:5).tickSize(-width).tickFormat(''));
@@ -22,14 +32,20 @@ export function createBubbleChart(node, { onBrush = () => {}, onFocus = () => {}
     if(!mini)plot.append('text').attr('class','watermark').attr('x',width-6).attr('y',height-14).attr('text-anchor','end').text(options.yearLabel||'');
     points=plot.append('g').attr('class','points');
     const observations=options.mode==='species'?speciesBubbles(rows):rows.map(r=>({...r,id:r.record_id}));
-    const radii=d=>options.mode==='species'?areaRadius(d.n,151,34):options.size==='equal'?(mini?3.2:4.5):areaRadius(d[options.size||'bill_length_mm'],options.size==='bill_depth_mm'?22:60,mini?4.5:8);
+    const radii=d=>bubbleRadius(d,options),shade=options.shade||'bill_depth_mm';
     points.selectAll('circle').data(observations,d=>d.id).join('circle').attr('class','bubble').attr('data-record',d=>d.id)
-      .attr('cx',d=>x(d.flipper_length_mm)).attr('cy',d=>y(d.body_mass_g)).attr('r',radii).attr('fill',d=>COLOR[d.species])
-      .attr('tabindex',mini?null:0).attr('role',mini?null:'button').attr('aria-label',d=>d.aggregate?`${d.name}，${d.n} 条样本，平均鳍长 ${d.flipper_length_mm.toFixed(1)} 毫米，平均体重 ${d.body_mass_g.toFixed(1)} 克`:`${d.record_id}，鳍长 ${d.flipper_length_mm} 毫米，体重 ${d.body_mass_g} 克`)
+      .attr('cx',d=>x(d.flipper_length_mm)).attr('cy',d=>y(d.body_mass_g)).attr('r',radii).attr('fill',d=>bubbleFill(d,shade))
+      .attr('data-size-value',d=>options.mode==='species'?d.n:options.size==='equal'?null:d[options.size||'bill_length_mm'])
+      .attr('data-shade-value',d=>shade==='none'?null:d[shade])
+      .attr('tabindex',mini?null:0).attr('role',mini?null:'button').attr('aria-label',d=>`${d.aggregate?`${d.name}，${d.n} 条样本，均值`:`${d.record_id}，个体`}，鳍长 ${d.flipper_length_mm.toFixed(1)} 毫米，体重 ${d.body_mass_g.toFixed(1)} 克，喙长 ${d.bill_length_mm?.toFixed(1)??'未记录'} 毫米，喙深 ${d.bill_depth_mm?.toFixed(1)??'未记录'} 毫米`)
+      .on('pointerenter',mini?null:function(){d3.select(this).raise();})
       .on('pointermove',mini?null:(e,d)=>tooltip(e,d)).on('pointerleave',hideTooltip).on('click',mini?null:(_,d)=>onFocus(d))
-      .on('focus',mini?null:(e,d)=>{const b=e.target.getBoundingClientRect();tooltip({clientX:b.x,clientY:b.y},d);}).on('blur',hideTooltip)
+      .on('focus',mini?null:(e,d)=>{d3.select(e.target).raise();const b=e.target.getBoundingClientRect();tooltip({clientX:b.x,clientY:b.y},d);}).on('blur',hideTooltip)
       .on('keydown',mini?null:(e,d)=>{if(e.key==='Enter'||e.key===' '){e.preventDefault();onFocus(d);}});
-    if(options.animate&&!matchMedia('(prefers-reduced-motion: reduce)').matches){points.selectAll('circle').attr('opacity',d=>previous.has(d.id)?1:0).attr('cx',d=>previous.get(d.id)?.x??x(d.flipper_length_mm)).attr('cy',d=>previous.get(d.id)?.y??y(d.body_mass_g)).attr('r',d=>previous.get(d.id)?.r??radii(d)).transition().duration(420).attr('cx',d=>x(d.flipper_length_mm)).attr('cy',d=>y(d.body_mass_g)).attr('r',radii).attr('opacity',1);}
+    if(options.animate&&!matchMedia('(prefers-reduced-motion: reduce)').matches){
+      points.selectAll('circle').attr('cx',d=>previous.get(d.id)?.x??x(d.flipper_length_mm)).attr('cy',d=>previous.get(d.id)?.y??y(d.body_mass_g)).attr('r',d=>previous.get(d.id)?.r??radii(d)).attr('fill',d=>previous.get(d.id)?.fill??bubbleFill(d,shade)).transition('appearance').duration(420).attr('cx',d=>x(d.flipper_length_mm)).attr('cy',d=>y(d.body_mass_g)).attr('r',radii).attr('fill',d=>bubbleFill(d,shade));
+      points.selectAll('circle').attr('opacity',d=>previous.has(d.id)?1:0).transition('fade').duration(420).attr('opacity',1);
+    }
     if(options.mode==='species')plot.append('g').selectAll('text').data(observations).join('text').attr('class','species-label').attr('x',d=>x(d.flipper_length_mm)).attr('y',d=>y(d.body_mass_g)-radii(d)-10).attr('text-anchor','middle').text(d=>d.name);
     brush=d3.brush().extent([[0,0],[width,height]]).on('brush end',e=>{if(sync)return;onBrush(e.selection?{flipper_length_mm:[x.invert(e.selection[0][0]),x.invert(e.selection[1][0])],body_mass_g:[y.invert(e.selection[1][1]),y.invert(e.selection[0][1])]}:null);});
     brushLayer=plot.append('g').attr('class','brush').call(brush).style('display',!mini&&options.brush&&options.mode!=='species'?null:'none');
@@ -38,7 +54,7 @@ export function createBubbleChart(node, { onBrush = () => {}, onFocus = () => {}
   }
   function highlight(ids) {
     if(!points)return;
-    points.selectAll('circle').interrupt().attr('opacity',d=>!ids||ids.has(d.record_id)?1:.12);
+    points.selectAll('circle').interrupt('fade').attr('opacity',d=>!ids||ids.has(d.record_id)?1:.12);
   }
   function setRange(range) {
     if(!brushLayer)return;
@@ -49,10 +65,26 @@ export function createBubbleChart(node, { onBrush = () => {}, onFocus = () => {}
 }
 
 export function drawSizeLegend(node,mode,size) {
-  const svg=d3.select(node);svg.selectAll('*').remove();svg.attr('viewBox','0 0 210 70');
+  const svg=d3.select(node);svg.selectAll('*').remove();svg.attr('viewBox','0 0 240 86');
   if(size==='equal'&&mode!=='species'){svg.append('text').attr('class','axis-label').attr('x',10).attr('y',28).text('所有个体使用相同大小');return;}
-  const values=mode==='species'?[10,30,60]:size==='bill_depth_mm'?[14,18,22]:[35,45,55];
-  values.forEach((v,i)=>{const r=mode==='species'?areaRadius(v,151,34):areaRadius(v,size==='bill_depth_mm'?22:60,8);const cx=30+i*70;svg.append('circle').attr('cx',cx).attr('cy',46-r).attr('r',r).attr('fill','none').attr('stroke','#718e84');svg.append('text').attr('class','axis-label').attr('x',cx).attr('y',65).attr('text-anchor','middle').text(`${v}${mode==='species'?' 条':' mm'}`);});
+  const values=mode==='species'?[10,30,60]:BUBBLE_FIELDS[size].examples;
+  values.forEach((v,i)=>{const r=bubbleRadius({n:v,[size]:v},{mode,size});const cx=36+i*78;svg.append('circle').attr('cx',cx).attr('cy',53-r).attr('r',r).attr('fill','#dcece5').attr('stroke','#718e84');svg.append('text').attr('class','axis-label').attr('x',cx).attr('y',75).attr('text-anchor','middle').text(`${v}${mode==='species'?' 条':' mm'}`);});
+}
+
+export function drawShadeLegend(node,mode,shade) {
+  const svg=d3.select(node);svg.selectAll('*').remove();svg.attr('viewBox','0 0 320 86').attr('aria-label',shade==='none'?'三个物种的颜色图例':`三个物种的${mode==='species'?'平均':''}${BUBBLE_FIELDS[shade].label}深浅图例`);
+  if(shade==='none'){
+    SPECIES.forEach((species,i)=>{svg.append('circle').attr('cx',10+i*108).attr('cy',28).attr('r',5).attr('fill',species.color);svg.append('text').attr('class','axis-label').attr('x',22+i*108).attr('y',32).text(species.name);});
+    return;
+  }
+  const field=BUBBLE_FIELDS[shade],defs=svg.append('defs'),labelX=0,start=62,span=208;
+  SPECIES.forEach((species,i)=>{
+    const id=`${node.id}-${species.id}`,gradient=defs.append('linearGradient').attr('id',id);
+    [0,.25,.5,.75,1].forEach(t=>gradient.append('stop').attr('offset',`${t*100}%`).attr('stop-color',bubbleFill({species:species.id,[shade]:field.domain[0]+t*(field.domain[1]-field.domain[0])},shade)));
+    svg.append('text').attr('class','axis-label').attr('x',labelX).attr('y',14+i*22).text(species.name);
+    svg.append('rect').attr('x',start).attr('y',4+i*22).attr('width',span).attr('height',12).attr('rx',3).attr('fill',`url(#${id})`);
+  });
+  [0,.5,1].forEach(t=>svg.append('text').attr('class','axis-label').attr('x',start+t*span).attr('y',81).attr('text-anchor','middle').text(`${field.domain[0]+t*(field.domain[1]-field.domain[0])} mm`));
 }
 
 export function drawAnnual(node,series,metric,year,allYears) {

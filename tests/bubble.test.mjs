@@ -1,8 +1,9 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
+import vm from 'node:vm';
 import { parsePenguins, summarize } from '../assets/data.js';
-import { YEARS, DEFAULT_SCOPE, copyScope, filterScope, selectedRows, speciesBubbles, areaRadius, annualSeries, snapshot } from '../assets/bubble-model.js';
+import { YEARS, DEFAULT_SCOPE, copyScope, filterScope, selectedRows, speciesBubbles, areaRadius, bubbleRadius, shadeFraction, annualSeries, snapshot } from '../assets/bubble-model.js';
 
 const model = parsePenguins(readFileSync(new URL('../EDA_企鹅数据探索/penguins.csv', import.meta.url), 'utf8'));
 const all = { ...copyScope(DEFAULT_SCOPE), allYears: true };
@@ -33,6 +34,8 @@ test('species bubbles use actual means and encode sample count in area', () => {
   for (const b of bubbles) {
     assert.equal(b.body_mass_g, summarize(model.valid.filter(r => r.species === b.species)).meanMass);
     assert.equal(b.flipper_length_mm, b.rows.reduce((s, r) => s + r.flipper_length_mm, 0) / b.n);
+    assert.equal(b.bill_length_mm, b.rows.reduce((s, r) => s + r.bill_length_mm, 0) / b.n);
+    assert.equal(b.bill_depth_mm, b.rows.reduce((s, r) => s + r.bill_depth_mm, 0) / b.n);
     assert.ok(Number.isFinite(b.flipper_length_mm));
   }
   const radiusRatio = areaRadius(40, 60, 8) / areaRadius(20, 60, 8);
@@ -40,6 +43,38 @@ test('species bubbles use actual means and encode sample count in area', () => {
   assert.equal(areaRadius(null, 60, 8), 0);
   assert.equal(areaRadius(-1, 60, 8), 0);
   assert.equal(areaRadius(20, 0, 8), 0);
+});
+
+test('larger bubbles preserve true areas and depth shading uses a fixed scale', () => {
+  const a=bubbleRadius({bill_length_mm:35}),b=bubbleRadius({bill_length_mm:55});
+  assert.ok(b>10 && b>a);
+  assert.ok(Math.abs((b/a)**2-55/35)<1e-12);
+  assert.equal(shadeFraction(13),0);
+  assert.equal(shadeFraction(22),1);
+  assert.equal(shadeFraction(17.5),.5);
+  assert.equal(shadeFraction(null),null);
+  for(const row of model.valid){
+    assert.ok(row.bill_depth_mm>=13 && row.bill_depth_mm<=22);
+    assert.ok(row.bill_length_mm>=30 && row.bill_length_mm<=60);
+    assert.ok(Number.isFinite(bubbleRadius(row)));
+  }
+});
+
+test('displayed colors become darker with larger measured bills for every species', async () => {
+  const context=vm.createContext({});
+  vm.runInContext(readFileSync(new URL('../vendor/d3.v7.min.js',import.meta.url),'utf8'),context);
+  const previous=globalThis.window;
+  globalThis.window={d3:context.d3};
+  try{
+    const {bubbleFill}=await import('../assets/bubble-chart.js');
+    for(const species of ['Adelie','Chinstrap','Gentoo']){
+      const lightness=[13,17.5,22].map(bill_depth_mm=>context.d3.lab(bubbleFill({species,bill_depth_mm})).l);
+      assert.ok(lightness[0]>lightness[1] && lightness[1]>lightness[2]);
+    }
+    assert.equal(bubbleFill({species:'Adelie'},'none'),'#0072B2');
+  }finally{
+    if(previous===undefined)delete globalThis.window;else globalThis.window=previous;
+  }
 });
 
 test('annual means obey category filters but ignore current year and brush', () => {
