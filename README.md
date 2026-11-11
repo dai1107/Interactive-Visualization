@@ -1,5 +1,13 @@
 # Palmer 企鹅观察室
 
+## ▶ [点击这里操作交互图表](https://dai1107.github.io/Interactive-Visualization/?v=bubble-20261111#explorer)
+
+进入本仓库的 GitHub Pages，即可切换年份、播放气泡变化、筛选物种和查看个体数据。也可点击下面的预览图进入。
+
+[![企鹅交互界面预览：点击打开年份播放与气泡图](docs/interactive-preview.png)](https://dai1107.github.io/Interactive-Visualization/?v=bubble-20261111#explorer)
+
+> 这张图是静态预览。实际交互请点击上方标题或图片；GitHub 的 `index.html` 文件页用于查看、编辑源码。
+
 研究问题：鳍长与体重的关系在不同物种和性别中是否一致？延续作业 2 的企鹅探索性分析，完成作业 3 的交互网页。
 
 本次版本参照 GDP 与寿命页面的布局，采用左侧筛选、上方统计、右侧主图、下方年度图与明细。主图只保留气泡，取消回归线与均值菱形的叠加。新增真实年份切换和播放、物种均值气泡、气泡面积图例、岛屿筛选。A/B 对比默认收起。
