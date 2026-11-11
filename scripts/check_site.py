@@ -39,7 +39,12 @@ def main():
             if response.status != 200:
                 raise SystemExit(f'Unexpected HTTP status for {relative}: {response.status}')
             content_type = response.headers.get_content_type()
-        if hashlib.sha256(data).digest() != hashlib.sha256(local.read_bytes()).digest():
+        expected = local.read_bytes()
+        # Git serves committed LF text even when core.autocrlf checks it out as
+        # CRLF on Windows. Keep the audited CSV comparison byte-for-byte.
+        if local.suffix.lower() in ('.html', '.js', '.css', '.svg'):
+            expected = expected.replace(b'\r\n', b'\n')
+        if hashlib.sha256(data).digest() != hashlib.sha256(expected).digest():
             raise SystemExit(f'Deployed resource does not match the checkout: {relative}')
         if resource_path.endswith('.js') and content_type not in ('application/javascript', 'text/javascript'):
             raise SystemExit(f'Invalid module MIME type: {relative} {content_type}')
