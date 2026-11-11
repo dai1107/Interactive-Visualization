@@ -1,98 +1,36 @@
 <!doctype html>
-<html lang="zh-CN">
-<head>
-  <meta charset="utf-8">
-  <meta name="viewport" content="width=device-width,initial-scale=1">
-  <meta name="description" content="探索 Palmer 群岛企鹅的鳍长与体重，比较不同物种和性别的样本关系。">
-  <meta name="theme-color" content="#f5f4ef">
-  <title>鳍长与体重 · Palmer 企鹅探索</title>
-  <link rel="icon" href="assets/favicon.svg" type="image/svg+xml">
-  <link rel="stylesheet" href="assets/style.css?v=20261111-compare">
-  <script defer src="vendor/vega.min.js"></script>
-  <script defer src="vendor/vega-lite.min.js"></script>
-  <script defer src="vendor/vega-embed.min.js"></script>
-  <script type="module" src="assets/app.js?v=20261111-compare"></script>
-</head>
-<body>
-  <a class="skip" href="#explorer">跳到交互图表</a>
-  <div class="shell">
-    <header class="masthead"><a class="brand" href="./"><span class="brand-icon" aria-hidden="true">P</span> PALMER FIELD NOTES</a><span class="edition">数据探索 <span aria-hidden="true">/</span> 01</span></header>
-    <main>
-      <section class="intro" aria-labelledby="page-title">
-        <div><p class="eyebrow">南极 · PALMER 群岛 · 2007—2009</p><h1 id="page-title">鳍长一些，<br>就会更重吗<span class="accent">？</span></h1><p class="lead">从全部样本到单一物种，再到雌雄分组。<br>看看企鹅的鳍长与体重，是否始终呈现相同的关系。</p></div>
-        <div class="intro-note"><span class="note-index">观察笔记 01</span><p>总体的关系，<br>也存在于每个分组里吗？</p><a href="#explorer">从一张散点图开始 <span aria-hidden="true">↙</span></a></div>
-      </section>
+<html lang="zh-CN"><head>
+<meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<meta name="description" content="按年份、物种与性别探索Palmer企鹅的鳍长与体重。气泡面积表达喙长或样本数，支持动态年份播放与框选联动。">
+<title>鳍长与体重 · 企鹅观察室</title><link rel="icon" href="assets/favicon.svg"><link rel="stylesheet" href="assets/style.css?v=bubble-20261111">
+<script src="vendor/d3.v7.min.js" defer></script><script type="module" src="assets/bubble-app.js?v=bubble-20261111"></script>
+</head><body>
+<header class="topbar"><a class="brand" href="#"><span class="brand-icon">↗</span> 企鹅观察室 <small>PENGUIN OBSERVATORY</small></a><a href="#method">数据与方法 ↗</a></header>
+<main>
+<section class="intro"><div><p class="eyebrow">EXPERIMENT 03 / PALMER PENGUINS</p><h1>鳍更长，<br>也会更重吗<span>？</span></h1><p class="lede">比较物种与性别，逐年观察点群变化。用一个清楚的气泡图，探索鳍长与体重的关系。</p></div><div class="intro-note"><span class="tiny">南极 Palmer 群岛</span><strong>2007—2009</strong><p>3 个物种 · 3 座岛屿 · 344 条原始记录<br>主图保留 342 条鳍长与体重有效的观测</p><a href="#explorer">开始探索 <span>↓</span></a></div></section>
 
-      <section id="explorer" class="explorer" aria-labelledby="explorer-heading">
-        <div class="section-heading"><h2 id="explorer-heading">观察，筛选，再比较。</h2><p>每个点是一条观测记录 · 先试着只选一种企鹅</p></div>
-        <section class="guide" aria-labelledby="guide-heading"><div class="guide-heading"><div><p class="eyebrow">一条可以随时离开的探索路径</p><h3 id="guide-heading">跟着一个问题看数据</h3></div><button id="guide-exit" type="button" class="text-button" disabled>自由探索</button></div><div id="guide-steps" class="guide-steps" role="group" aria-label="选择探索步骤"></div><div class="guide-bottom"><p id="guide-prompt" role="status">数据加载后，可任选一步开始；也可以直接使用下方筛选。</p><div class="guide-nav"><button id="guide-prev" type="button" disabled aria-label="上一个探索步骤">上一步</button><span id="guide-progress">自由探索</span><button id="guide-next" type="button" disabled>开始引导</button></div></div></section>
-        <form id="filters" class="filters" aria-label="数据筛选">
-          <fieldset id="species-controls" disabled><legend>01 <span>物种</span></legend><div class="species-options">
-            <label class="species-option adelie"><input type="checkbox" name="species" value="Adelie" checked><span class="swatch" aria-hidden="true"></span><span>阿德利<small>Adelie</small></span></label>
-            <label class="species-option chinstrap"><input type="checkbox" name="species" value="Chinstrap" checked><span class="swatch" aria-hidden="true"></span><span>帽带<small>Chinstrap</small></span></label>
-            <label class="species-option gentoo"><input type="checkbox" name="species" value="Gentoo" checked><span class="swatch" aria-hidden="true"></span><span>巴布亚<small>Gentoo</small></span></label>
-            <button type="button" id="select-all" class="text-button">全选物种</button>
-          </div></fieldset>
-          <fieldset id="sex-controls" disabled><legend>02 <span>性别</span></legend><label class="sr-only" for="sex">选择性别</label><select id="sex"><option value="all">全部（含未记录）</option><option value="female">雌性</option><option value="male">雄性</option><option value="unknown">未记录</option></select></fieldset>
-          <button type="button" id="reset" class="reset" disabled><span aria-hidden="true">↺</span> 重置筛选</button>
-        </form>
+<section class="view-bar"><div><span class="control-label">观察视图</span><div class="segments" role="group" aria-label="观察视图"><button id="view-individual" aria-pressed="true">个体样本</button><button id="view-species" aria-pressed="false">物种概览</button></div></div><div><label class="control-label" for="size-field">气泡面积表示</label><select id="size-field"><option value="bill_length_mm">喙长 · mm</option><option value="bill_depth_mm">喙深 · mm</option><option value="equal">等大个体点</option></select><span id="group-size-label" hidden>当前物种的样本数 · n</span></div><div class="legend-box"><span class="control-label" id="size-legend-label">面积与喙长成正比</span><svg id="size-legend" aria-label="气泡大小图例"></svg></div><p class="view-explanation" id="view-explanation">一颗气泡代表一条个体观测；颜色区分物种，面积表示喙长。</p></section>
 
-        <div id="load-state" class="load-state" role="status"><span id="load-message">正在加载企鹅数据…</span><button id="retry" type="button" hidden>重新加载</button></div>
-        <div class="selection-status"><p id="condition-summary" role="status" aria-atomic="true">等待数据加载</p><p id="notice" role="status"></p></div>
-        <div class="brush-toolbar"><p>从图中空白处拖动框选多条记录，比较局部与整体。</p><button type="button" id="clear-brush" class="text-button" disabled>清除框选</button></div>
-        <details class="range-disclosure"><summary>用数值范围框选 <span>键盘与触屏可用</span></summary><form id="range-form"><fieldset id="range-controls" disabled><legend class="sr-only">设置鳍长和体重的框选范围</legend><label>鳍长下限 mm<input id="flipper-min" type="number" min="170" max="235" step="any" value="170" required></label><label>鳍长上限 mm<input id="flipper-max" type="number" min="170" max="235" step="any" value="235" required></label><label>体重下限 g<input id="mass-min" type="number" min="2500" max="6500" step="any" value="2500" required></label><label>体重上限 g<input id="mass-max" type="number" min="2500" max="6500" step="any" value="6500" required></label><button type="submit" class="range-apply">应用范围</button></fieldset><p id="range-error" role="alert"></p></form></details>
-        <div class="exploration-tools">
-          <fieldset id="trend-controls" class="trend-controls" disabled><legend>读懂关系</legend><label for="trend-mode">趋势线</label><select id="trend-mode"><option value="none">隐藏趋势线</option><option value="overall">只看整体</option><option value="species">按物种分别看</option><option value="both" selected>整体与物种叠加</option></select></fieldset>
-          <div class="capture-tools" role="group" aria-label="保留当前样本用于对比"><span id="capture-count">等待数据加载</span><button id="capture-a" class="slot-button slot-a" type="button" disabled>存为 A</button><button id="capture-b" class="slot-button slot-b" type="button" disabled>存为 B</button><button id="view-comparison" class="text-button" type="button" disabled>查看对比 ↓</button></div>
-        </div>
-        <p id="trend-note" class="trend-note">虚线表示整体趋势，实线按物种着色；趋势线随当前筛选和框选更新。</p>
-        <div class="analysis-layout">
-          <div class="chart-panel">
-            <div class="chart-heading"><span>鳍长 × 体重</span><label class="annotation-toggle"><input id="show-annotations" type="checkbox" checked disabled>标注物种均值</label></div>
-            <p class="chart-instruction chart-help">空白处拖动框选 · 双击清除 · 点击圆点固定详情</p>
-            <div class="chart-wrap"><div id="chart" aria-label="企鹅鳍长与体重散点图"></div><div id="empty-state" class="empty-state" hidden><strong id="empty-title">请选择至少一种企鹅</strong><p id="empty-message"></p><button type="button" id="empty-all">全选物种</button></div></div>
-            <div class="chart-bottom"><span><span id="annotation-key" class="mean-key" aria-hidden="true"></span><span id="annotation-note">菱形：当前探索范围内的物种均值（n≥3）</span></span><span id="count-caption">— 条有效记录</span></div>
-          </div>
-          <aside class="sidebar" aria-label="统计与个体详情">
-            <div class="metrics"><div><span class="metric-label">筛选基准 <span class="metric-symbol">n</span></span><strong id="sample-count">—</strong><small id="sample-base">有效测量记录</small></div><div><span class="metric-label">基准相关 <span class="metric-symbol">r</span></span><strong id="correlation">—</strong><small>Pearson · 描述性统计</small></div></div>
-            <p id="correlation-note" class="stat-note"></p>
-            <section class="detail-panel" aria-labelledby="detail-heading"><div class="detail-heading"><h3 id="detail-heading">靠近一个点</h3><span id="detail-badge">个体详情</span></div><p id="detail-placeholder">悬停或点击图中的点，<br>看看它来自哪里。</p><dl id="detail-values" hidden></dl><button id="clear-detail" type="button" class="text-button" hidden>清除固定详情</button></section>
-            <p class="record-note">记录编号按 CSV 行序生成，<br>不代表原始个体身份。</p>
-          </aside>
-        </div>
+<section class="workspace" id="explorer"><aside class="controls" id="filters">
+<div class="section-label"><span>01 / 调整观察范围</span><button id="reset" class="text-button">重置筛选</button></div>
+<div class="year-header"><label for="year">观察年份</label><output id="year-value" for="year">2007</output></div><input id="year" type="range" min="2007" max="2009" value="2007" step="1"><div class="range-ends"><span>2007</span><span>2009</span></div><button id="play" class="play-button" aria-pressed="false">▶ 播放年份变化</button><label class="check-option"><input id="all-years" type="checkbox"> 合并查看全部年份</label>
+<fieldset><legend>比较物种 <span>可多选</span></legend><div id="species-options"></div></fieldset>
+<label class="control-label" for="sex">性别</label><select id="sex"><option value="all">全部（含未记录）</option><option value="female">雌性</option><option value="male">雄性</option><option value="unknown">未记录</option></select>
+<label class="control-label" for="island">观测岛屿</label><select id="island"><option value="all">全部岛屿</option><option value="Biscoe">Biscoe</option><option value="Dream">Dream</option><option value="Torgersen">Torgersen</option></select>
+<div class="guide"><strong>试着比较</strong><p>总体的相关性，在单一物种或性别内部也一样吗？先选帽带企鹅，再切换雌雄。</p><button id="sex-example" class="text-button">打开帽带雌雄 A/B 示例 →</button></div>
+<div class="pinned-detail"><div class="section-label"><span id="detail-heading">点击气泡固定详情</span><button id="clear-detail" class="text-button" hidden>清除</button></div><p id="detail-placeholder" class="hint">悬停查看数值，点击保留详情。</p><dl id="detail-values"></dl></div>
+</aside><div class="analysis">
+<div class="stats" aria-live="polite"><div><span>有效个体数</span><strong id="stat-count">—</strong><small id="count-context"></small></div><div><span>平均体重</span><strong id="stat-mass">—</strong><small>当前范围内的个体均值</small></div><div><span>个体 Pearson r</span><strong id="stat-r">—</strong><small id="correlation-note">鳍长与体重 · 描述性统计</small></div></div>
+<section class="chart-panel"><div class="chart-top"><div><p class="eyebrow">THE BIG PICTURE</p><h2 id="chart-title">鳍长与体重</h2></div><button id="brush-toggle" class="outline-button" aria-pressed="false">框选个体</button></div><p id="coverage-note" class="coverage-note" role="status">正在加载本地 CSV…</p><div class="chart-meta"><span id="encoding-note">颜色表示物种 · 气泡面积表示喙长</span><span id="year-note">2007 年</span></div><div class="chart-wrap"><svg id="scatter" role="img" aria-label="企鹅鳍长与体重气泡图"><title>企鹅鳍长与体重气泡图</title></svg></div><div class="chart-bottom"><span id="selection-status" aria-live="polite">悬停查看详情，点击保留个体信息。</span><button id="clear-brush" class="text-button" hidden>清除框选</button></div>
+<details class="numeric-selection" id="numeric-selection"><summary>用数值范围框选</summary><div class="range-fields"><label>鳍长下限 / mm<input id="flipper-min" type="number" value="180" step="1"></label><label>鳍长上限 / mm<input id="flipper-max" type="number" value="200" step="1"></label><label>体重下限 / g<input id="mass-min" type="number" value="3000" step="50"></label><label>体重上限 / g<input id="mass-max" type="number" value="4000" step="50"></label></div><button id="apply-range" class="outline-button">应用范围</button><span id="range-error" class="hint" role="status"></span></details>
+<p class="sample-note">各年份是不同观测样本。播放展示样本分布的变化，不是同一只企鹅的成长轨迹。</p></section>
+</div></section>
 
-        <section class="observation" aria-labelledby="observation-title"><div><span class="eyebrow">当前观察</span><span id="scope-badge" class="scope-badge">等待数据</span></div><h3 id="observation-title">先从全部样本开始</h3><p id="observation-text" role="status">数据加载成功后，这里的说明会随筛选和框选实时更新。</p></section>
+<section class="detail-grid"><section class="chart-panel"><div class="chart-top"><div><p class="eyebrow">02 / 按年比较</p><h2>每个物种的年度均值</h2></div><label class="compact-label">年度指标<select id="annual-metric"><option value="body_mass_g">平均体重</option><option value="flipper_length_mm">平均鳍长</option></select></label></div><div id="annual-legend" class="trend-legend"></div><svg id="annual-chart" role="img" aria-label="2007至2009年各物种的年度均值"></svg><p class="hint">沿用当前物种、性别和岛屿条件，对三个年份分别汇总；不应用主图框选。缺失年份不连线，纵轴按实际均值缩放。</p></section>
+<section class="chart-panel"><div class="chart-top"><div><p class="eyebrow">03 / 回到个体数据</p><h2>当前样本明细</h2></div><button id="export-current" class="text-button">下载当前 CSV ↓</button></div><p id="table-note" class="hint"></p><div class="table-scroll"><table><caption class="sr-only">当前筛选或框选的有效个体，点击编号固定详情</caption><thead><tr><th>编号 / 物种</th><th>鳍长 / mm</th><th>体重 / g</th><th>喙长 / mm</th></tr></thead><tbody id="table-body"></tbody></table></div></section></section>
 
-        <section id="compare-workspace" class="compare-workspace" aria-labelledby="compare-heading">
-          <div class="compare-heading"><div><p class="eyebrow">保留条件 · 同时比较</p><h3 id="compare-heading">这一组和那一组，差在哪里？</h3></div><button id="compare-preset" type="button" class="compare-preset" disabled>试试：帽带雌雄对比 ↗</button></div>
-          <p id="comparison-status" class="comparison-status" role="status">先筛选或框选，存为 A；再改变条件，存为 B。</p>
-          <div class="compare-grid">
-            <article class="compare-card slot-a" aria-labelledby="compare-a-heading">
-              <header><h4 id="compare-a-heading"><span class="slot-label">A</span> 第一组</h4><button id="clear-a" class="text-button" type="button" disabled>清除 A</button></header>
-              <p id="compare-a-empty" class="compare-empty">先在上方筛选或框选，再点击“存为 A”。</p>
-              <div id="compare-a-content" hidden><p id="compare-a-scope" class="compare-scope"></p><dl class="compare-metrics"><div><dt>样本 n</dt><dd id="compare-a-n"></dd></div><div><dt>相关 r</dt><dd id="compare-a-r"></dd></div><div><dt>平均体重</dt><dd id="compare-a-mass"></dd></div><div><dt>平均鳍长</dt><dd id="compare-a-flipper"></dd></div></dl><div id="compare-a-chart" class="saved-chart" aria-label="A 组的鳍长体重散点图和整体趋势线"></div></div>
-              <div class="compare-card-actions"><button id="replace-a" type="button" disabled>用当前样本存为 A</button><button id="restore-a" type="button" disabled>返回 A 继续探索</button></div>
-            </article>
-            <article class="compare-card slot-b" aria-labelledby="compare-b-heading">
-              <header><h4 id="compare-b-heading"><span class="slot-label">B</span> 第二组</h4><button id="clear-b" class="text-button" type="button" disabled>清除 B</button></header>
-              <p id="compare-b-empty" class="compare-empty">调整条件后存为 B，A 组会一直保留。</p>
-              <div id="compare-b-content" hidden><p id="compare-b-scope" class="compare-scope"></p><dl class="compare-metrics"><div><dt>样本 n</dt><dd id="compare-b-n"></dd></div><div><dt>相关 r</dt><dd id="compare-b-r"></dd></div><div><dt>平均体重</dt><dd id="compare-b-mass"></dd></div><div><dt>平均鳍长</dt><dd id="compare-b-flipper"></dd></div></dl><div id="compare-b-chart" class="saved-chart" aria-label="B 组的鳍长体重散点图和整体趋势线"></div></div>
-              <div class="compare-card-actions"><button id="replace-b" type="button" disabled>用当前样本存为 B</button><button id="restore-b" type="button" disabled>返回 B 继续探索</button></div>
-            </article>
-          </div>
-          <div id="comparison-results" class="comparison-results" hidden><p id="comparison-delta" class="comparison-delta"></p><div class="compare-distribution-heading"><h4>把体重分布放在一起看</h4><span><i class="compare-key key-a" aria-hidden="true"></i>A 组 <i class="compare-key key-b" aria-hidden="true"></i>B 组</span></div><div id="compare-distribution" aria-label="A 组和 B 组体重分布的组内占比比较"></div><p class="compare-footnote">两组散点图使用相同坐标，散点颜色表示物种；虚线为各组整体趋势。分布按各组人数换算占比，便于比较不同大小的样本。差异仅作描述，不代表显著性检验。</p><button id="export-comparison" class="text-button" type="button" disabled>下载 A / B 对比数据 CSV ↓</button></div>
-        </section>
+<details id="comparison" class="comparison"><summary>深入比较：保留 A / B 两组样本 <span>可选</span></summary><div class="compare-content"><div class="compare-toolbar"><p id="comparison-status" role="status">筛选或框选一组样本后存为 A，改变条件后存为 B。保存组会保留完整筛选条件。</p><div><button id="capture-a" class="outline-button">存为 A</button><button id="capture-b" class="outline-button">存为 B</button><button id="export-comparison" class="text-button" disabled>下载对比 CSV ↓</button></div></div><div class="compare-grid"><section class="compare-card"><div class="chart-top"><h3>A 组</h3><button id="restore-a" class="text-button" disabled>恢复 A 条件</button></div><p id="scope-a" class="hint">尚未保存</p><p id="stats-a"></p><svg id="chart-a" aria-label="A组样本散点图" role="img"></svg></section><section class="compare-card"><div class="chart-top"><h3>B 组</h3><button id="restore-b" class="text-button" disabled>恢复 B 条件</button></div><p id="scope-b" class="hint">尚未保存</p><p id="stats-b"></p><svg id="chart-b" aria-label="B组样本散点图" role="img"></svg></section></div><p id="comparison-delta" class="hint"></p></div></details>
 
-        <section class="linked-section" aria-labelledby="linked-heading"><div class="linked-heading"><div><p class="eyebrow">框选联动 · 局部与基准</p><h3 id="linked-heading">选中的企鹅，更重一些吗？</h3></div><p id="brush-summary" role="status" aria-atomic="true">尚未框选；下图显示当前筛选的体重分布。</p></div><div class="linked-layout"><div class="distribution-panel"><div class="distribution-legend"><span><i class="baseline-key" aria-hidden="true"></i>筛选基准</span><span><i class="subset-key" aria-hidden="true"></i>框选子集</span><span>每格 250 g · 同一计数尺度</span></div><div id="mass-chart" aria-label="筛选基准与框选子集的体重分布直方图"></div><details class="bin-disclosure"><summary>查看分箱计数</summary><div class="table-scroll"><table><caption class="sr-only">体重分布的相同分箱及各自记录数</caption><thead><tr><th scope="col">体重区间 g</th><th scope="col">基准 n</th><th scope="col">框选 n</th></tr></thead><tbody id="bin-rows"></tbody></table></div></details></div><div class="benchmark-panel"><h4>与当前筛选基准比较</h4><div class="table-scroll"><table class="benchmark-table"><caption class="sr-only">筛选基准与框选子集的统计对比</caption><thead><tr><th scope="col">范围</th><th scope="col">样本 n</th><th scope="col">均重 g</th><th scope="col">相关 r</th></tr></thead><tbody id="benchmark-stats"></tbody></table></div><p id="benchmark-difference">拖动框选或输入数值范围，查看子集的统计与占比。</p><p class="selection-caveat">框选会限制变量范围，局部相关系数仅描述所选样本；不能据此判断差异具有统计显著性。</p></div></div></section>
-
-        <section class="comparison" aria-labelledby="comparison-heading"><div><p class="eyebrow">把总体拆开看</p><h3 id="comparison-heading">物种内部，关系如何？</h3><p id="group-scope">未框选时统计筛选基准；框选后统计子集。<br>比较总体与组内的 r，同时留意样本数。</p></div><div class="table-scroll"><table class="group-table"><caption class="sr-only">当前探索范围内各物种的样本数与相关系数</caption><thead><tr><th scope="col">物种</th><th scope="col">样本 n</th><th scope="col">相关 r</th></tr></thead><tbody id="group-stats"></tbody></table></div></section>
-        <details id="data-disclosure" class="data-disclosure"><summary>查看当前数据 <span id="table-count"></span><span class="disclosure-hint">框选后只列出选中记录；键盘和触屏可读</span></summary><div class="table-scroll"><table class="record-table"><caption>当前探索范围的有效记录，按原始行序排列</caption><thead><tr><th scope="col">编号</th><th scope="col">物种</th><th scope="col">性别</th><th scope="col">鳍长 mm</th><th scope="col">体重 g</th><th scope="col">岛屿</th><th scope="col">年份</th></tr></thead><tbody id="record-rows"></tbody></table></div></details>
-      </section>
-
-      <section class="reading-notes" aria-labelledby="reading-heading"><h2 id="reading-heading">读图时，记住这三件事。</h2><div class="notes-grid"><article><span>01 / 分组</span><h3>总体相关包含组间差异</h3><p>切换物种和性别，观察点群和 r 的变化。r 描述线性关系，单个数值无法代替图形。</p></article><article><span>02 / 缺失</span><h3>未记录，不等于不存在</h3><p id="missing-note">原始数据有 344 条记录；2 条缺少鳍长和体重。主图保留性别未记录但测量有效的记录。</p></article><article><span>03 / 边界</span><h3>相关性不代表因果</h3><p>这些是有限地点和年份的观察样本。分组差异未经显著性检验，也不能代表所有企鹅。</p></article></div></section>
-    </main>
-    <footer><div><span class="brand-footer">PALMER FIELD NOTES</span><p>企鹅身体形态的交互探索 · 作业 3</p></div><div class="source"><p>数据：<a href="https://allisonhorst.github.io/palmerpenguins/" target="_blank" rel="noopener noreferrer">palmerpenguins ↗</a> · CC0<br>Horst, Hill & Gorman (2020) · <a href="https://doi.org/10.5281/zenodo.3960218" target="_blank" rel="noopener noreferrer">数据引用</a> · <a href="EDA_企鹅数据探索/penguins.csv" download>下载原始 CSV</a></p></div></footer>
-  </div>
-  <noscript><p class="noscript">此交互网页需要启用 JavaScript。你也可以直接下载 <a href="EDA_企鹅数据探索/penguins.csv">原始 CSV 数据</a>。</p></noscript>
-</body>
-</html>
+<section class="method" id="method"><div><p class="eyebrow">DATA & METHODOLOGY</p><h2>分清个体与均值，<br>再解释关系。</h2></div><div class="method-copy"><p><strong>研究问题。</strong>鳍长与体重的关系在不同物种和性别中是否一致？这是作业 2 的企鹅探索性分析的交互延伸。</p><p><strong>数据与缺失。</strong>使用 Palmer penguins 的 344 条原始观测，来自 2007—2009 年、三个物种和三座岛屿。主图剔除鳍长或体重缺失的 2 条，保留 342 条；未记录性别的样本仍保留。没有插补或生成观测。编号按原始 CSV 行序生成，不是可跨年份追踪的个体身份。</p><p><strong>视觉编码。</strong>个体视图中，横轴为鳍长，纵轴为体重；气泡面积可表示喙长或喙深，也可改为等大点。面积使用从零开始的平方根半径编码。物种概览改为物种均值位置，面积表示该组样本数；三个均值气泡不是三个个体。主图默认不叠加回归线或均值标记。</p><p><strong>年份与统计。</strong>主图坐标范围保持固定，年份只使用原始数据中的 2007、2008、2009。年度均值来自不同样本，不解释为个体增长。样本数、平均体重和 Pearson r 都由当前有效个体计算，不能把总体相关解释成每个物种内的关系，也不能据此认定因果或显著性。</p><p><strong>保存与引用。</strong>A/B 仅保存在当前页面会话，刷新后清空，可下载 CSV 留存。数据来源为 palmerpenguins（CC0）；可视化使用本地 D3.js。旧版的趋势叠加和引导实现保留在 Git 历史中。</p><div class="source-links"><a href="https://allisonhorst.github.io/palmerpenguins/" target="_blank" rel="noreferrer">官方数据说明 ↗</a><a href="EDA_企鹅数据探索/penguins.csv" download>原始 CSV ↓</a><a href="https://doi.org/10.1371/journal.pone.0090081" target="_blank" rel="noreferrer">原始研究 ↗</a><a href="https://github.com/dai1107/Interactive-Visualization" target="_blank" rel="noreferrer">GitHub 源码 ↗</a></div></div></section>
+</main><footer><span>企鹅观察室 / 交互可视化实验</span><span>Palmer penguins · 2007—2009 · D3.js</span></footer><div id="tooltip" role="tooltip" hidden></div><div id="notice" class="sr-only" role="status"></div><noscript>此网页需要启用 JavaScript。可下载原始 CSV 查看数据。</noscript>
+</body></html>

@@ -1,97 +1,71 @@
-# Palmer 企鹅交互探索
+# Palmer 企鹅观察室
 
-研究问题：鳍长与体重的关系在不同物种和性别中是否一致？本项目独立完成，从作业 2 的探索性分析继续发展为作业 3 的交互式网页。
+研究问题：鳍长与体重的关系在不同物种和性别中是否一致？延续作业 2 的企鹅探索性分析，完成作业 3 的交互网页。
 
-已实现可从静态 CSV 加载数据的交互网页，支持物种与性别筛选、个体详情、同步统计、重置和可展开数据表。在刷选联动、五步引导与动态说明的基础上，现支持整体/分物种趋势线切换、A/B 样本保留与条件恢复、两组同坐标散点对比、组内占比分布比较及 CSV 导出。采用 Vega-Lite 绘图，Vega 相关库以固定版本保存在 `vendor/`，不依赖 CDN、外部字体或定制后端。
+本次版本参照 GDP 与寿命页面的布局，采用左侧筛选、上方统计、右侧主图、下方年度图与明细。主图只保留气泡，取消回归线与均值菱形的叠加。新增真实年份切换和播放、物种均值气泡、气泡面积图例、岛屿筛选。A/B 对比默认收起。
 
-**在线体验：https://dai1107.github.io/Interactive-Visualization/**
+原发布地址：[GitHub Pages](https://dai1107.github.io/Interactive-Visualization/)。本地重做版本尚待获得仓库写入权限后发布，不能将此链接当作本地新版本的验收结果。仓库：[dai1107/Interactive-Visualization](https://github.com/dai1107/Interactive-Visualization)。
 
-仓库：https://github.com/dai1107/Interactive-Visualization 。使用 GitHub Pages 发布；线上资源可通过 `scripts/check_site.py` 核对。新增交互和 Chrome 浏览器检查见 [A/B 对比与趋势探索](docs/07_AB对比与趋势探索.md)，早期阶段记录保留在原验收文档中。
+## 主要交互
 
-## 项目资料
+1. 默认显示 2007 年的 109 条有效个体。拖动年份切换到 2008 年（114 条）或 2009 年（119 条），也可播放，或合并查看全部年份（342 条）。播放到 2009 年自动停止。
+2. 个体样本视图中，位置表示鳍长与体重，颜色表示物种，气泡面积表示喙长，可换成喙深或等大点。面积从零起算，半径按平方根缩放。
+3. 物种概览中，每个气泡代表一个物种的均值，面积表示该条件下的样本数。播放年份时，均值位置和面积平滑变化。不同年份是不同样本，不是同一只企鹅的成长轨迹。
+4. 筛选物种、性别、岛屿。全部性别包含未记录者；无样本时显示空状态。样本数、平均体重、Pearson r 均由有效个体计算，不把三个物种均值当成三个观测计算相关。
+5. 个体视图开启框选后，拖动矩形使统计与明细联动；也可输入数值范围。合并年份，使用鳍长 180—200 mm、体重 3000—4000 g，得到 144 条、均重约 3554.0 g、r≈0.218。切换筛选或年份会清除旧框选。
+6. 悬停或键盘聚焦气泡查看详情；点击或按 Enter 固定在侧栏，明细中的编号也可固定详情。当前 CSV 下载保留全部选中个体，不只导出屏幕可见的几行。
+7. 独立年度图沿用物种、性别、岛屿条件，比较三个年份的平均体重或平均鳍长，忽略当前年份限制与框选。纵轴按实际均值缩放。
+8. 展开 A/B 对比后可保存记录与完整条件（含年份、岛屿、框选），之后操作不改变快照；可恢复条件、下载含组标签的对比 CSV。帽带雌雄示例各 34 条。快照仅保存于当前会话。
 
-- [实施清单与当前进度](作业3实施清单.md)
-- [需求与选题范围](docs/01_需求与选题.md)
-- [数据核查与分组统计](docs/02_数据核查.md)
-- [视觉编码与交互规格](docs/03_视觉与交互设计.md)
-- [布局草图](docs/wireframe.png)
-- [实现与验收记录](docs/04_实现与验收.md)
-- [刷选联动与基准比较及手工验收](docs/05_刷选联动与基准比较.md)
-- [解释叙事与设计优化及手工验收](docs/06_解释叙事与设计优化.md)
-- [A/B 对比、趋势探索与浏览器验证](docs/07_AB对比与趋势探索.md)
-- [前期 EDA 报告](EDA_企鹅数据探索/企鹅数据探索报告.md)
+## 数据与实现
 
-## 复核数据
+原始 [penguins.csv](EDA_企鹅数据探索/penguins.csv) 完整保留，不插补、不生成数据。344 条原始记录中，342 条鳍长与体重有效；其中 333 条记录了性别，9 条性别缺失。编号按 CSV 原始行序生成，不能跨年追踪身份。总体 r≈0.871，属于描述性相关，不能推断因果或显著性。
 
-在仓库根目录执行，Python 3 标准库即可运行：
+当前页面使用本地固定版本 D3.js 7.9.0，无 CDN、外部字体或后端依赖。入口为 `index.html`，运行模块为 `assets/bubble-app.js`、`assets/bubble-chart.js`、`assets/bubble-model.js`，复用 `assets/data.js` 的 CSV 解析与基础统计。旧版 Vega 模块和测试保留用于历史复核，当前入口不加载。
 
-```powershell
-python scripts/audit_penguins.py
-```
+## 本地运行与单文件导出
 
-输出 `docs/data-audit.json` 和 `docs/02_数据核查.md`，不修改原始 CSV。原始 344 条记录中，342 条鳍长与体重有效，333 条同时记录了性别。总体 Pearson r≈0.871；分物种后约为 0.468、0.642、0.703。
-
-## 本地运行
-
-无需安装 npm 依赖或构建。安装 Python 3 后，在仓库根目录启动静态 HTTP 服务：
+需要 Python 3，无需安装 npm 依赖或构建：
 
 ```powershell
 python -m http.server 8000 --bind 127.0.0.1
 ```
 
-浏览器打开 http://127.0.0.1:8000/ 。结束预览时在终端按 Ctrl+C。不要直接双击 `index.html` 使用 `file://` 打开，浏览器会限制模块和 CSV 加载。也可运行 `npm start` 启动相同服务。
+打开 http://127.0.0.1:8000/ 。源代码入口需要 HTTP 服务，不能直接双击加载模块与 CSV。
 
-测试需要 Node.js 18 或以上版本，无需安装第三方测试依赖：
-
-```powershell
-node --test tests/data.test.mjs
-```
-
-亦可使用 `npm test`。15 项测试核对原始数据哈希、缺失处理、分组统计、全部筛选组合、格式错误、实际 Vega 数据流、原生刷选与联动、五步引导、动态说明、均值标注、线性拟合、快照独立性和占比分布。
-
-可选的浏览器检查使用 Playwright（仅开发验证需要，网页运行不需要）。在可以导入 `playwright` 且已安装 Chrome/Chromium 的环境中执行 `node tests/browser-smoke.cjs`。`BROWSER_EXECUTABLE_PATH` 可指定浏览器，`TEST_SITE_URL` 可改为线上地址；默认在本机启动临时静态服务，并验证 GitHub Pages 项目子路径。截图和下载文件写入已忽略的 `.tmp/`。
-
-## 如何探索
-
-1. 初始显示 342 条有效记录，Pearson r 约为 0.871。取消其他物种，仅保留帽带企鹅，比较总体与物种内的关系。
-2. 在帽带企鹅中切换雌性与雄性，比较 n 与 r；不同分组的差异仅作描述性分析。
-3. 悬停查看详情；点击固定一个点，移开鼠标仍保留。清除详情或重置可取消固定。
-4. 展开“查看当前数据”按行阅读个体信息；筛选与重置控件均可通过键盘使用。
-5. 选择“未记录”查看未知性别的记录；取消全部物种可检查空状态。重置全部可恢复初始数据范围。
-6. 从散点图空白处拖动矩形框选，体重直方图、分物种统计和明细表会联动。基准统计保留，便于和子集比较。
-7. 也可展开“用数值范围框选”，输入鳍长和体重上下限后应用；例如 180—200 mm、3000—4000 g 会选中 144 条记录，均重约 3554.0 g，r≈0.218。
-8. 双击图形或点击“清除框选”恢复当前基准。切换物种或性别会自动清除旧框选；缩放窗口保留数据单位下的范围。
-9. 点击上方引导步骤或“开始引导”，按“全体 → 帽带 → 雌性 → 雄性 → 局部”观察。可随时进入自由探索，保留当前数据范围。
-10. 菱形标记表示当前范围内 n≥3 的物种均值；可关闭标注。“当前观察”文字依据实际范围更新，不是固定结论。
-11. 在“趋势线”中切换整体、分物种、叠加或隐藏。深色虚线表示整体拟合，物种颜色的实线表示组内拟合；框选后按选中样本重新计算。
-12. 将当前筛选或框选“存为 A”，改变条件后“存为 B”。下方两组图形同时保留，显示各自的 n、r、平均体重与鳍长，以及 B 相对 A 的均值差和重合记录数。
-13. “返回 A/B 继续探索”恢复该组的物种、性别与矩形范围；“重置筛选”保留已存组。保存仅在当前页面会话内有效，刷新页面后清空，可提前下载对比 CSV。
-14. 也可点击“试试：帽带雌雄对比”一键生成 A/B 示例。分布以各组人数为分母显示占比，适合不同样本量的描述性比较。CSV 中 `group` 标明 A/B，同一记录属于两组时各输出一行。
-
-## GitHub Pages 部署
-
-入口为仓库根目录的 `index.html`，所有资源使用相对路径，支持项目子路径。`.nojekyll` 使文件按静态资源发布。无需构建步骤：仓库 Settings → Pages → Deploy from a branch → `main` → `/ (root)`。
-
-后续更新只需提交并推送到相同分支。若需要命令行核查，可以使用下方脚本；脚本只读取本仓库已保存的 Git 凭据，在内存中调用 GitHub API，不写入或输出凭据：
+需要可双击、断网使用的版本：
 
 ```powershell
-python scripts/github_pages.py inspect
+python scripts/build_offline.py penguins-offline.html
 ```
 
-`enable` 仅在尚未启用 Pages、且具有仓库管理权限时配置 `main` 根目录；遇到其他已有来源会保留原配置并退出。首次部署以实际 Pages 构建与线上 HTTP 核验结果为准。
+导出的单文件嵌入同一份 CSS、D3、应用和原始 CSV，源数据下载也可离线使用。
 
-复查线上资源与当前检出版本是否一致：
+## 验证与发布
+
+Node.js 18+，无需第三方测试依赖：
+
+```powershell
+node --test tests/*.test.mjs
+```
+
+20 项测试包含原始数据哈希、缺失处理、统计与历史模块，以及新增的年份分区、岛屿和性别筛选、物种均值、面积比例、年度图统计口径、框选和快照独立性。浏览器交互验收见 [动态气泡与布局重做](docs/08_动态气泡与布局重做.md)。`tests/browser-smoke.cjs` 对应旧版界面，当前版本不使用该脚本。
+
+GitHub Pages 使用 `main` 分支根目录和 `.nojekyll`，支持项目子路径。后续提交推送后，可核对线上版本：
 
 ```powershell
 python scripts/check_site.py https://dai1107.github.io/Interactive-Visualization/
 ```
 
-该检查只验证 HTTP 状态、脚本 MIME 类型、资源字节与 CSV 哈希，不代替浏览器中的点击、悬停和排版验收。
+该脚本核对资源字节、脚本 MIME 和原始 CSV 哈希，不代替真实浏览器验证。
 
-## 数据与引用
+## 项目资料与引用
 
-本地数据：[penguins.csv](EDA_企鹅数据探索/penguins.csv)。来源：[palmerpenguins 官方项目](https://allisonhorst.github.io/palmerpenguins/)；数据采用 CC0 许可。数据时间范围为 2007—2009 年，首次下载日期未记录，2026 年 11 月 10 日完成本次本地核查与官方来源核对。
+- [实施清单](作业3实施清单.md)
+- [数据核查](docs/02_数据核查.md)
+- [本次布局、动态气泡与验收](docs/08_动态气泡与布局重做.md)
+- [作业 2 EDA](EDA_企鹅数据探索/企鹅数据探索报告.md)
 
-Horst AM, Hill AP, Gorman KB (2020). palmerpenguins: Palmer Archipelago (Antarctica) penguin data. https://doi.org/10.5281/zenodo.3960218
+`docs/01`—`docs/07` 是前期设计和验收记录，其中旧版界面说明以本 README 和 `docs/08` 为准。
 
-原始研究：Gorman KB, Williams TD, Fraser WR (2014). Ecological sexual dimorphism and environmental variability within a community of Antarctic penguins (genus Pygoscelis). https://doi.org/10.1371/journal.pone.0090081
+数据来自 [palmerpenguins 官方项目](https://allisonhorst.github.io/palmerpenguins/)，采用 CC0 许可。Horst AM, Hill AP, Gorman KB (2020), [doi:10.5281/zenodo.3960218](https://doi.org/10.5281/zenodo.3960218)。原始研究：Gorman KB, Williams TD, Fraser WR (2014), [doi:10.1371/journal.pone.0090081](https://doi.org/10.1371/journal.pone.0090081)。D3 许可随库保存在 `vendor/D3-LICENSE.txt`。
