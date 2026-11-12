@@ -1,10 +1,10 @@
 # Palmer 企鹅观察室
 
-## ▶ [点击这里操作交互图表](https://dai1107.github.io/Interactive-Visualization/?v=llm-20261112e#explorer)
+## ▶ [点击这里操作交互图表](https://dai1107.github.io/Interactive-Visualization/?v=final-20261112f#explorer)
 
 进入本仓库的 GitHub Pages，即可切换年份、播放气泡变化、筛选物种和查看个体数据。也可点击下面的预览图进入。
 
-[![企鹅交互界面预览：点击打开年份播放与气泡图](docs/interactive-preview.png)](https://dai1107.github.io/Interactive-Visualization/?v=llm-20261112e#explorer)
+[![企鹅交互界面预览：点击打开年份播放与气泡图](docs/interactive-preview.png)](https://dai1107.github.io/Interactive-Visualization/?v=final-20261112f#explorer)
 
 > 这张图是静态预览。实际交互请点击上方标题或图片；GitHub 的 `index.html` 文件页用于查看、编辑源码。
 
@@ -18,7 +18,7 @@
 
 新增 Bonus：[五步发现、联动分布与探索记录本](docs/11_Bonus设计与验收.md)。从页面上方“开始发现之旅”进入，可保存发现并导出报告素材。
 
-LLM新增：[DeepSeek真实交互与部署](docs/12_LLM真实交互与部署.md)。已用真实模型及本机浏览器验证解释、候选筛选、应用/撤销和观察草稿；线上助手仍需配置后端地址与访问口令，不能将前端发布等同于后端已部署。
+本次定稿不部署LLM，网页已隐藏未连接的助手入口。已完成本机验证的[DeepSeek可选扩展](docs/12_LLM真实交互与部署.md)保留在源码中，不作为线上功能或加分成果。
 
 ## 主要交互
 
@@ -35,13 +35,12 @@ LLM新增：[DeepSeek真实交互与部署](docs/12_LLM真实交互与部署.md)
 10. 联动对照显示当前选中与同年其余样本的测量分布、物种构成和相关系数；两组互不重合，各组比例独立归一化。
 11. 探索记录本可保存完整条件、编码和观察到本浏览器；支持JSON导入/导出、恢复与Markdown报告素材导出。统计始终用原始数据复核，最多20条。
 
-12. DeepSeek兼容的自然语言助手：后端用同一CSV计算证据，模型给出解释和候选视图，先预览实际n/r再由用户应用；可撤销，支持草稿，防止应用过期回答。密钥只在后端配置。
 
 ## 数据与实现
 
 原始 [penguins.csv](EDA_企鹅数据探索/penguins.csv) 完整保留，不插补、不生成数据。344 条原始记录中，342 条鳍长与体重有效；其中 333 条记录了性别，9 条性别缺失。编号按 CSV 原始行序生成，不能跨年追踪身份。总体 r≈0.871，属于描述性相关，不能推断因果或显著性。
 
-当前页面使用本地固定版本 D3.js 7.9.0，无 CDN或外部字体依赖。基础图表无需后端；LLM助手使用单独后端，未连接时不影响图表。入口为 `index.html`，运行模块为 `assets/bubble-app.js`、`assets/bubble-chart.js`、`assets/bubble-model.js`，Bonus由`assets/bonus-model.js`、`assets/bonus-charts.js`、`assets/bonus-experience.js`实现；复用 `assets/data.js` 的 CSV 解析与基础统计。旧版 Vega 模块和测试保留用于历史复核，当前入口不加载。面积与深浅的更新说明见 [气泡面积与深浅编码](docs/09_气泡面积与深浅编码.md)。
+当前页面使用本地固定版本 D3.js 7.9.0，无 CDN或外部字体依赖。本次提交的交互图表无需后端。入口为 `index.html`，运行模块为 `assets/bubble-app.js`、`assets/bubble-chart.js`、`assets/bubble-model.js`，Bonus由`assets/bonus-model.js`、`assets/bonus-charts.js`、`assets/bonus-experience.js`实现；复用 `assets/data.js` 的 CSV 解析与基础统计。旧版 Vega 模块和测试保留用于历史复核，当前入口不加载。面积与深浅的更新说明见 [气泡面积与深浅编码](docs/09_气泡面积与深浅编码.md)。
 
 ## 本地运行与单文件导出
 
@@ -59,7 +58,7 @@ python -m http.server 8000 --bind 127.0.0.1
 python scripts/build_offline.py penguins-offline.html
 ```
 
-导出的单文件嵌入同一份 CSS、D3、应用和原始 CSV，图表和源数据下载可离线使用；LLM助手仍需要联网后端。
+导出的单文件嵌入同一份 CSS、D3、应用和原始 CSV，图表和源数据下载可离线使用；可选LLM源码保留，页面入口已隐藏。
 
 ## 验证与发布
 
