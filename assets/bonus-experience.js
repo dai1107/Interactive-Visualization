@@ -1,8 +1,8 @@
-import { setActivePage, setActiveInspector } from './layout.js?v=editorial-20261113b';
+import { setActivePage, setActiveInspector } from './layout.js?v=atelier-20261113c';
 import { SPECIES } from './data.js';
-import { BUBBLE_FIELDS, PLOT_VIEWS, selectedRows, summarizePlot } from './bubble-model.js?v=editorial-20261113b';
-import { DISCOVERY_STEPS, discoveryView, cohortComparison, explorationRecord, validateNotebook, notebookPayload, recordMarkdown } from './bonus-model.js?v=editorial-20261113b';
-import { drawCohortDistribution, drawCohortComposition } from './bonus-charts.js?v=editorial-20261113b';
+import { BUBBLE_FIELDS, PLOT_VIEWS, selectedRows, summarizePlot } from './bubble-model.js?v=atelier-20261113c';
+import { DISCOVERY_STEPS, discoveryView, cohortComparison, explorationRecord, validateNotebook, notebookPayload, recordMarkdown } from './bonus-model.js?v=atelier-20261113c';
+import { drawCohortDistribution, drawCohortComposition } from './bonus-charts.js?v=atelier-20261113c';
 
 export function createBonusExperience({ rows, fingerprint, getView, applyView, captureOrigin, restoreOrigin, sexComparison, announce, onSelectRange }) {
   const find = id => document.getElementById(id);

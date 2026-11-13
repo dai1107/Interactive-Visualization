@@ -1,3 +1,5 @@
+import { revealElement, updateNavIndicators } from './motion.js?v=atelier-20261113c';
+
 const workspacePages = {
   explore: { title: '鳍更长，也会更重吗？', description: '把总体关系拆开，看见物种与性别的差异。', kicker: 'FIELD STUDY / 01', hash: '#explorer' },
   discover: { title: '总体与局部，为什么不同？', description: '从三个问题开始，让每一次操作都有一个值得追查的方向。', kicker: 'DISCOVERY / 02', hash: '#discovery' },
@@ -11,6 +13,7 @@ function notifyLayout() { window.dispatchEvent(new CustomEvent('penguin:layout',
 
 export function setActivePage(page, options = {}) {
   if (!Object.hasOwn(workspacePages, page)) return;
+  const changing=workspacePage!==page;
   workspacePage = page;
   for (const id of Object.keys(workspacePages)) {
     const panel = document.getElementById('page-' + id);
@@ -27,10 +30,13 @@ export function setActivePage(page, options = {}) {
   if (options.hash !== false && location.hash !== metadata.hash) { try { history.pushState(null, '', metadata.hash); } catch {} }
   if (options.scroll !== false) window.scrollTo({ top: 0, behavior: 'instant' });
   if (options.notify !== false) notifyLayout();
+  updateNavIndicators();
+  if(changing){revealElement(document.getElementById('page-'+page),7,360);revealElement(document.getElementById('workspace-title'),4,300);}
 }
 
 export function setActiveInspector(id, options = {}) {
   if (!['relation', 'distribution', 'trend', 'data'].includes(id)) return;
+  const changing=inspectorView!==id;
   inspectorView = id;
   document.querySelectorAll('[data-inspector]').forEach(tab => {
     const selected = tab.dataset.inspector === id;
@@ -38,6 +44,8 @@ export function setActiveInspector(id, options = {}) {
     document.getElementById(tab.getAttribute('aria-controls')).hidden = !selected;
   });
   if (options.notify !== false) notifyLayout();
+  updateNavIndicators();
+  if(changing)revealElement(document.getElementById('panel-'+id),5,270);
 }
 
 function routeWorkspaceHash() {

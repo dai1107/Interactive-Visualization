@@ -1,10 +1,10 @@
-import { metricComparison } from './insight-model.js?v=editorial-20261113b';
+import { metricComparison } from './insight-model.js?v=atelier-20261113c';
 const insightD3 = window.d3;
 
 export function drawCorrelationLens(node, lens, onGroup = () => {}) {
   const d = insightD3, width = Math.max(300, node.parentElement.clientWidth), mobile = width < 500;
   const left = mobile ? 79 : 120, right = mobile ? 60 : 120;
-  const rows = [{ name: '总体', ...lens.total, color: '#203b37', total: true }, ...lens.groups, { name: '组内合并', ...lens.within, color: '#8e6b45', within: true }];
+  const rows = [{ name: '总体', ...lens.total, color: '#223f35', total: true }, ...lens.groups, { name: '组内合并', ...lens.within, color: '#a77c54', within: true }];
   const height = rows.length * 49 + 56, x = d.scaleLinear().domain([-1, 1]).range([left, width - right]);
   const root = d.select(node).attr('viewBox', `0 0 ${width} ${height}`); root.selectAll('*').remove();
   root.append('title').text('相关性透镜：总体、各分组与减去组均值后的合并相关，统一使用负一到正一的刻度');
@@ -41,8 +41,8 @@ export function drawMetricComparison(node, a, b) {
     root.append('line').attr('x1', x(row.domain[0])).attr('x2', x(row.domain[1])).attr('y1', y).attr('y2', y).attr('stroke', '#dce4db').attr('stroke-width', 3);
     if (row.a !== null && row.b !== null) {
       root.append('line').attr('x1', x(row.a)).attr('x2', x(row.b)).attr('y1', y).attr('y2', y).attr('stroke', '#728c83').attr('stroke-width', 4);
-      root.append('circle').attr('cx', x(row.a)).attr('cy', y).attr('r', 5).attr('fill', '#176f65');
-      root.append('path').attr('d', d.symbol().type(d.symbolDiamond).size(65)()).attr('transform', `translate(${x(row.b)},${y})`).attr('fill', '#b16b3b');
+      root.append('circle').attr('cx', x(row.a)).attr('cy', y).attr('r', 5).attr('fill', '#386a5c');
+      root.append('path').attr('d', d.symbol().type(d.symbolDiamond).size(65)()).attr('transform', `translate(${x(row.b)},${y})`).attr('fill', '#b17c58');
       root.append('text').attr('x', width - right + 12).attr('y', y + 4).attr('class', 'lens-value').text(`${row.delta >= 0 ? '+' : ''}${row.delta.toFixed(1)} ${row.unit}`);
       root.append('text').attr('x', left).attr('y', y + 44).attr('class', 'axis-title').text(`A ${row.a.toFixed(1)} · B ${row.b.toFixed(1)} ${row.unit}`);
     } else root.append('text').attr('x', left).attr('y', y + 4).attr('class', 'axis-title').text('先保留 A、B 两组有效样本');

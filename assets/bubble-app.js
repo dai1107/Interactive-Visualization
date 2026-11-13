@@ -1,14 +1,15 @@
 import { SPECIES, SEX_LABELS, parsePenguins, summarize } from './data.js';
-import { BUBBLE_FIELDS, PLOT_VIEWS, summarizePlot, normalizePlotRange, describePlot, DEFAULT_SCOPE, copyScope, filterScope, selectedRows, annualSeries, snapshot } from './bubble-model.js?v=editorial-20261113b';
-import { createBubbleChart, drawSizeLegend, drawShadeLegend, drawAnnual, COLOR } from './bubble-chart.js?v=editorial-20261113b';
+import { BUBBLE_FIELDS, PLOT_VIEWS, summarizePlot, normalizePlotRange, describePlot, DEFAULT_SCOPE, copyScope, filterScope, selectedRows, annualSeries, snapshot } from './bubble-model.js?v=atelier-20261113c';
+import { createBubbleChart, drawSizeLegend, drawShadeLegend, drawAnnual, COLOR } from './bubble-chart.js?v=atelier-20261113c';
 
-import { csvFingerprint, validateView } from './bonus-model.js?v=editorial-20261113b';
-import { createBonusExperience } from './bonus-experience.js?v=editorial-20261113b';
-import { createLlmAssistant } from './llm-ui.js?v=editorial-20261113b';
+import { csvFingerprint, validateView } from './bonus-model.js?v=atelier-20261113c';
+import { createBonusExperience } from './bonus-experience.js?v=atelier-20261113c';
+import { createLlmAssistant } from './llm-ui.js?v=atelier-20261113c';
 
-import { initializeLayout, setActivePage } from './layout.js?v=editorial-20261113b';
+import { initializeMotion, revealElement, setMetricText } from './motion.js?v=atelier-20261113c';
+import { initializeLayout, setActivePage } from './layout.js?v=atelier-20261113c';
 import { hasSelection } from './selection-model.js';
-import { createEnhancements } from './enhancement-ui.js?v=editorial-20261113b';
+import { createEnhancements } from './enhancement-ui.js?v=atelier-20261113c';
 
 const $=id=>document.getElementById(id),name=id=>SPECIES.find(s=>s.id===id)?.name||id;
 const number=(v,digits=1)=>v===null||!Number.isFinite(v)?'—':v.toLocaleString('zh-CN',{minimumFractionDigits:digits,maximumFractionDigits:digits});
@@ -19,12 +20,13 @@ function element(tag,text){const node=document.createElement(tag);if(text!==unde
 let noticeTimer;
 function announce(message){$('notice').textContent=message;$('notice').dataset.visible='true';clearTimeout(noticeTimer);noticeTimer=setTimeout(()=>$('notice').dataset.visible='false',3200);}
 function stop(){if(state.timer)clearInterval(state.timer);state.timer=null;$('play').textContent='▶ 播放年份变化';$('play').setAttribute('aria-pressed','false');}
-function clearPinned(){state.pinned=null;tip.hidden=true;renderDetails();}
+function clearPinned(){state.pinned=null;tip.hidden=true;chart.pin(null);renderDetails();}
 function tooltip(e,d){
+  const opening=tip.hidden;
   tip.replaceChildren();tip.append(element('strong',d.aggregate?`${d.name} · 物种均值`:`${name(d.species)} · ${d.record_id}`));
   const lines=d.aggregate?[`样本数　${d.n} 条`,`平均鳍长　${number(d.flipper_length_mm)} mm`,`平均体重　${number(d.body_mass_g)} g`,`平均喙长　${number(d.bill_length_mm)} mm`,`平均喙深　${number(d.bill_depth_mm)} mm`,`个体相关 r　${number(d.r,3)}`]:[`${d.year} 年 · ${d.island} · ${SEX_LABELS[d.sex??'unknown']}`,`鳍长　${d.flipper_length_mm} mm`,`体重　${d.body_mass_g} g`,`喙长　${d.bill_length_mm??'未记录'} mm`,`喙深　${d.bill_depth_mm??'未记录'} mm`];
   lines.push(`${d.aggregate?'面积：样本数':state.size==='equal'?'大小：等大点':`面积：${BUBBLE_FIELDS[state.size].label}`} · ${state.shade==='none'?'颜色仅区分物种':`深浅：${d.aggregate?'平均':''}${BUBBLE_FIELDS[state.shade].label}`}`);
-  lines.forEach(text=>tip.append(element('div',text)));tip.hidden=false;tip.style.left=Math.max(8,Math.min((e.clientX??20)+15,innerWidth-tip.offsetWidth-12))+'px';tip.style.top=Math.max(8,Math.min((e.clientY??20)+15,innerHeight-tip.offsetHeight-12))+'px';
+  lines.forEach(text=>tip.append(element('div',text)));tip.hidden=false;tip.style.left=Math.max(8,Math.min((e.clientX??20)+15,innerWidth-tip.offsetWidth-12))+'px';tip.style.top=Math.max(8,Math.min((e.clientY??20)+15,innerHeight-tip.offsetHeight-12))+'px';if(opening)revealElement(tip,3,150);
 }
 const chart=createBubbleChart($('scatter'),{tooltip,hideTooltip:()=>tip.hidden=true,onFocus:d=>{state.pinned=d;renderDetails();chart.pin(d.id||d.record_id);},onBrush:range=>{if(!range)return;experience.leaveGuide();enhancements.rangeSelect(normalizePlotRange(range,state.plot));}});
 const comparisons={a:createBubbleChart($('chart-a')),b:createBubbleChart($('chart-b'))};
@@ -43,7 +45,7 @@ const enhancements=createEnhancements({rows:()=>state.model?.valid||[],getView:c
 
 function syncControls(){
   syncRanges();for(const id of ['body','bill'])$('plot-'+id).setAttribute('aria-pressed',String(state.plot===id));$('focus-species').checked=state.focusSpecies;
-  $('mobile-filter-label').textContent=(state.scope.allYears?'全部年份':state.scope.year)+' · '+(state.scope.species.length===3?'全部物种':state.scope.species.map(name).join('、')||'无物种');$('year').value=state.scope.year;$('year').disabled=state.scope.allYears;$('year-value').value=state.scope.allYears?'全部':state.scope.year;$('all-years').checked=state.scope.allYears;
+  $('mobile-filter-label').textContent=(state.scope.allYears?'全部年份':state.scope.year)+' · '+(state.scope.species.length===3?'全部物种':state.scope.species.map(name).join('、')||'无物种');$('year').value=state.scope.year;$('year').style.setProperty('--range-progress',((state.scope.year-2007)/2*100)+'%');$('year').disabled=state.scope.allYears;$('year-value').value=state.scope.allYears?'全部':state.scope.year;$('all-years').checked=state.scope.allYears;
   $('sex').value=state.scope.sex;$('island').value=state.scope.island;
   document.querySelectorAll('input[name="species"]').forEach(el=>el.checked=state.scope.species.includes(el.value));
   $('view-individual').setAttribute('aria-pressed',String(state.mode==='individual'));$('view-species').setAttribute('aria-pressed',String(state.mode==='species'));
@@ -70,8 +72,10 @@ function refresh(animate=false){
 function updateSummary(highlight=false){
   const baseline=filterScope(state.model.valid,state.scope),rows=selectedRows(state.model.valid,state.scope),stats={...summarize(rows),r:summarizePlot(rows,state.plot).r};
   if(highlight)chart.highlight(hasSelection(state.scope)?new Set(rows.map(r=>r.record_id)):null);
-  $('stat-count').textContent=stats.n;$('stat-mass').textContent=stats.meanMass===null?'—':`${number(stats.meanMass,0)} g`;$('stat-r').textContent=number(stats.r,3);$('count-context').textContent=hasSelection(state.scope)?`选中 ${rows.length} / ${baseline.length} 条`:`当前筛选 ${baseline.length} 条`;
-  $('correlation-note').textContent=rows.length<3?'至少需要3条有效记录':stats.r===null?'当前坐标没有变化，r不可计算':PLOT_VIEWS[state.plot].title+' · 描述性统计';renderObservation(rows);$('clear-brush').hidden=!hasSelection(state.scope);
+  setMetricText($('stat-count'),stats.n);setMetricText($('stat-mass'),stats.meanMass===null?'—':`${number(stats.meanMass,0)} g`);setMetricText($('stat-r'),number(stats.r,3));$('count-context').textContent=hasSelection(state.scope)?`选中 ${rows.length} / ${baseline.length} 条`:`当前筛选 ${baseline.length} 条`;
+  if(rows.length<3||stats.r===null)$('correlation-note').textContent=rows.length<3?'至少需要3条有效记录':'当前坐标没有变化，r不可计算';
+  else $('correlation-note').replaceChildren(element('span',PLOT_VIEWS[state.plot].title+' · '),element('span','描述性统计'));
+  renderObservation(rows);$('clear-brush').hidden=!hasSelection(state.scope);
   $('selection-status').textContent=hasSelection(state.scope)?`已选中 ${rows.length} 条个体，统计与明细已联动。`:state.brush?'在主图中拖动矩形；关闭框选后可点击气泡。':state.mode==='species'?'点击气泡查看该物种的均值、样本数和个体相关性。':'悬停查看详情，点击保留个体信息。';
   $('table-note').textContent=`${state.scope.allYears?'2007—2009':state.scope.year} · ${rows.length} 条有效个体 · 保留原始行序`;
   const body=$('table-body');body.replaceChildren();rows.forEach(r=>{const tr=element('tr'),first=element('td'),button=element('button',`${r.record_id} · ${name(r.species)}`);button.addEventListener('click',()=>{state.pinned=r;renderDetails();chart.pin(r.record_id);});first.append(button);tr.append(first);[r.flipper_length_mm,r.body_mass_g,r.bill_length_mm??'未记录',r.bill_depth_mm??'未记录'].forEach(v=>tr.append(element('td',v)));body.append(tr);});
@@ -84,7 +88,7 @@ function renderDetails(){
   if(!d)return;const fields=d.aggregate?[['样本数',`${d.n} 条`],['平均鳍长',`${number(d.flipper_length_mm)} mm`],['平均体重',`${number(d.body_mass_g)} g`],['平均喙长',`${number(d.bill_length_mm)} mm`],['平均喙深',`${number(d.bill_depth_mm)} mm`],['个体相关 r',number(d.r,3)]]:[['年份',d.year],['物种',name(d.species)],['性别',SEX_LABELS[d.sex??'unknown']],['岛屿',d.island],['鳍长',`${d.flipper_length_mm} mm`],['体重',`${d.body_mass_g} g`],['喙长',`${d.bill_length_mm??'未记录'} mm`],['喙深',`${d.bill_depth_mm??'未记录'} mm`]];
   fields.forEach(([key,value])=>$('detail-values').append(element('dt',key),element('dd',value)));
 }
-function change(action,animate=false,keepSelection=false){experience.leaveGuide();stop();if(keepSelection&&state.scope.range){state.scope.selection=[{kind:'range',op:'replace',label:'原矩形范围',range:state.scope.range,exclusive:[]}];state.scope.range=null;}action();if(!keepSelection){state.scope.range=null;delete state.scope.selection;enhancements.resetHistory();}state.brush=false;clearPinned();refresh(animate);}
+function change(action,animate=true,keepSelection=false){experience.leaveGuide();stop();if(keepSelection&&state.scope.range){state.scope.selection=[{kind:'range',op:'replace',label:'原矩形范围',range:state.scope.range,exclusive:[]}];state.scope.range=null;}action();if(!keepSelection){state.scope.range=null;delete state.scope.selection;enhancements.resetHistory();}state.brush=false;clearPinned();refresh(animate);}
 function scopeText(scope){return `${PLOT_VIEWS[scope.plot||'body'].name} · ${scope.allYears?'2007—2009 全部年份':scope.year+' 年'} · ${scope.species.map(name).join('、')||'无物种'} · ${SEX_LABELS[scope.sex]} · ${scope.island==='all'?'全部岛屿':scope.island}${scope.selection?.length?' · '+scope.selection.length+'步组合选择':scope.range?' · 含矩形框选':''}`;}
 function renderComparisons(){
   $('compare-indicator').textContent=Number(Boolean(state.saved.a))+Number(Boolean(state.saved.b))+' / 2';
@@ -136,7 +140,9 @@ function startPlayback(){
   refresh(true);$('play').textContent='Ⅱ 暂停播放';$('play').setAttribute('aria-pressed','true');state.timer=setInterval(tickPlayback,+$('play-speed').value);
 }
 
+initializeMotion();
 initializeLayout();
+window.addEventListener('penguin:motion',()=>{if(state.model)refresh(false);});
 window.addEventListener('penguin:layout',()=>{if(state.model)refresh();});
 try{
   const response=await fetch(new URL('../EDA_企鹅数据探索/penguins.csv',import.meta.url));if(!response.ok)throw new Error(`CSV HTTP ${response.status}`);const csvText=await response.text();state.model=parsePenguins(csvText);state.sourceHash=csvFingerprint(csvText);experience.initialize();llmAssistant.initialize();enhancements.initialize();
@@ -165,5 +171,5 @@ try{
   $('sex-example').addEventListener('click',()=>{experience.leaveGuide();stop();sexComparison();});
   $('export-current').addEventListener('click',()=>download(currentRows(),`penguins-${state.scope.allYears?'all-years':state.scope.year}-filtered.csv`));$('export-comparison').addEventListener('click',()=>download(['a','b'].flatMap(slot=>state.saved[slot].rows.map(r=>({...r,group:slot.toUpperCase()}))),'penguins-comparison.csv',true));
   let lastWidth=0,resizeFrame;new ResizeObserver(entries=>{const width=entries[0].contentRect.width;if(width<100||Math.abs(width-lastWidth)<1)return;lastWidth=width;cancelAnimationFrame(resizeFrame);resizeFrame=requestAnimationFrame(()=>refresh());}).observe($('scatter').parentElement);
-  refresh();
+  refresh();revealElement(document.querySelector('.analysis'),6,480);
 }catch(error){console.error(error);$('coverage-note').textContent='数据未能加载，请刷新重试或下载原始 CSV。';$('selection-status').textContent='若本地查看，请通过静态服务器打开网页，或使用提供的单文件离线版。';}

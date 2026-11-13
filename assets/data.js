@@ -1,7 +1,7 @@
 export const SPECIES = [
-  { id: 'Adelie', name: '阿德利', color: '#0072B2' },
-  { id: 'Chinstrap', name: '帽带', color: '#D55E00' },
-  { id: 'Gentoo', name: '巴布亚', color: '#009E73' },
+  { id: 'Adelie', name: '阿德利', color: '#52758B' },
+  { id: 'Chinstrap', name: '帽带', color: '#B27A56' },
+  { id: 'Gentoo', name: '巴布亚', color: '#477B69' },
 ];
 export const SEX_LABELS = { all: '全部（含未记录）', female: '雌性', male: '雄性', unknown: '未记录' };
 const COLUMNS = ['species', 'island', 'bill_length_mm', 'bill_depth_mm', 'flipper_length_mm', 'body_mass_g', 'sex', 'year'];

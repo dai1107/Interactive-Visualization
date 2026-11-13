@@ -28,7 +28,7 @@ def build(destination):
     css = (ROOT / 'assets/style.css').read_text(encoding='utf-8')
     csv = (ROOT / 'EDA_企鹅数据探索/penguins.csv').read_text(encoding='utf-8')
     modules = []
-    for filename in ['layout.js', 'data.js', 'selection-model.js', 'bubble-model.js', 'bubble-chart.js', 'bonus-model.js', 'bonus-charts.js', 'bonus-experience.js', 'llm-config.js', 'llm-model.js', 'llm-ui.js', 'insight-model.js', 'insight-charts.js', 'enhancement-ui.js', 'bubble-app.js']:
+    for filename in ['motion.js', 'layout.js', 'data.js', 'selection-model.js', 'bubble-model.js', 'bubble-chart.js', 'bonus-model.js', 'bonus-charts.js', 'bonus-experience.js', 'llm-config.js', 'llm-model.js', 'llm-ui.js', 'insight-model.js', 'insight-charts.js', 'enhancement-ui.js', 'bubble-app.js']:
         source = (ROOT / 'assets' / filename).read_text(encoding='utf-8')
         source = re.sub(r'^import .+?;\s*$', '', source, flags=re.M)
         source = re.sub(r'^export ', '', source, flags=re.M)

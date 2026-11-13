@@ -1,5 +1,6 @@
+import { motionAllowed } from './motion.js?v=atelier-20261113c';
 import { SPECIES } from './data.js';
-import { BUBBLE_FIELDS, PLOT_VIEWS, bubbleRadius, shadeFraction, speciesBubbles } from './bubble-model.js?v=editorial-20261113b';
+import { BUBBLE_FIELDS, PLOT_VIEWS, bubbleRadius, shadeFraction, speciesBubbles } from './bubble-model.js?v=atelier-20261113c';
 const d3 = window.d3;
 export const COLOR = Object.fromEntries(SPECIES.map(s => [s.id,s.color]));
 
@@ -8,64 +9,106 @@ export function bubbleFill(row, shade = 'bill_depth_mm') {
   const fraction = shadeFraction(row[shade], shade);
   if (fraction === null) return '#aeb9b3';
   const color = d3.hcl(COLOR[row.species]);
-  color.l = 78 - 35 * fraction;
-  color.c *= .45 + .4 * fraction;
+  color.l = 74 - 31 * fraction;
+  color.c *= .65 + .35 * fraction;
   return color.formatHex();
 }
 
 export function createBubbleChart(node, { onBrush = () => {}, onFocus = () => {}, tooltip = () => {}, hideTooltip = () => {} } = {}) {
-  const svg=d3.select(node);
-  let rows=[],options={},brush,brushLayer,sync=false,x,y,points,plot,m,width,height,selectedIds=null,hoveredSpecies=null,view=PLOT_VIEWS.body;
-  function draw(nextRows,nextOptions={}) {
-    const previous=new Map(points?points.selectAll('circle').nodes().map(n=>[n.__data__.id,{x:+n.getAttribute('cx'),y:+n.getAttribute('cy'),r:+n.getAttribute('r'),fill:n.getAttribute('fill')}]):[]);
-    rows=nextRows;options=nextOptions;view=PLOT_VIEWS[options.plot||'body'];selectedIds=null;hoveredSpecies=null;
-    const mini=Boolean(options.mini),outerWidth=Math.max(280,Math.floor(node.parentElement.clientWidth||500)),outerHeight=mini?270:outerWidth<550?345:(globalThis.innerHeight||900)<800?330:400;
-    m={left:mini?47:57,right:22,top:28,bottom:52};width=outerWidth-m.left-m.right;height=outerHeight-m.top-m.bottom;
-    svg.attr('viewBox',`0 0 ${outerWidth} ${outerHeight}`).attr('aria-label',`企鹅${view.title}气泡图`);svg.selectAll('*').interrupt().interrupt('appearance').interrupt('fade');svg.selectAll('g.frame').remove();
-    plot=svg.append('g').attr('class','frame').attr('transform',`translate(${m.left},${m.top})`);
-    x=d3.scaleLinear().domain(BUBBLE_FIELDS[view.x].domain).range([0,width]);y=d3.scaleLinear().domain(BUBBLE_FIELDS[view.y].domain).range([height,0]);
-    plot.append('g').attr('class','grid').call(d3.axisLeft(y).ticks(mini?4:5).tickSize(-width).tickFormat(''));
-    plot.append('g').attr('class','axis').attr('transform',`translate(0,${height})`).call(d3.axisBottom(x).ticks(outerWidth<500?4:7).tickSizeOuter(0));
-    plot.append('g').attr('class','axis').call(d3.axisLeft(y).ticks(mini?4:5).tickFormat(d3.format('~f')).tickSizeOuter(0));
-    plot.append('text').attr('class','axis-label').attr('y',-13).text(`${options.mode==='species'?'平均':''}${BUBBLE_FIELDS[view.y].label} / ${BUBBLE_FIELDS[view.y].unit}`);
-    plot.append('text').attr('class','axis-label').attr('x',width/2).attr('y',height+40).attr('text-anchor','middle').text(`${options.mode==='species'?'平均':''}${BUBBLE_FIELDS[view.x].label} / ${BUBBLE_FIELDS[view.x].unit}`);
-    const visibleRules=(options.selection||[]).filter(rule=>rule.kind==='range'&&(rule.range[view.x]||rule.range[view.y])).slice(-4);
-    const regionLayer=plot.append('g').attr('class','selection-regions').attr('pointer-events','none');
-    visibleRules.forEach(rule=>{const rx=rule.range[view.x]||BUBBLE_FIELDS[view.x].domain,ry=rule.range[view.y]||BUBBLE_FIELDS[view.y].domain;regionLayer.append('rect').attr('x',x(rx[0])).attr('y',y(ry[1])).attr('width',x(rx[1])-x(rx[0])).attr('height',y(ry[0])-y(ry[1])).attr('fill','none').attr('stroke',rule.op==='subtract'?'#b16b3b':'#176f65').attr('stroke-dasharray',rule.op==='subtract'?'3 3':'7 4').attr('stroke-width',1.4);});
-    points=plot.append('g').attr('class','points');
-    const observations=options.mode==='species'?speciesBubbles(rows,options.plot):rows.map(r=>({...r,id:r.record_id}));
-    const radii=d=>bubbleRadius(d,options),shade=options.shade||'bill_depth_mm';
-    points.selectAll('circle').data(observations,d=>d.id).join('circle').attr('class','bubble').attr('data-record',d=>d.id)
-      .attr('cx',d=>x(d[view.x])).attr('cy',d=>y(d[view.y])).attr('r',radii).attr('fill',d=>bubbleFill(d,shade))
-      .attr('data-size-value',d=>options.mode==='species'?d.n:options.size==='equal'?null:d[options.size||'bill_length_mm'])
-      .attr('data-shade-value',d=>shade==='none'?null:d[shade])
-      .attr('tabindex',mini?null:0).attr('role',mini?null:'button').attr('aria-label',d=>`${d.aggregate?`${d.name}，${d.n} 条样本，均值`:`${d.record_id}，个体`}，鳍长 ${d.flipper_length_mm.toFixed(1)} 毫米，体重 ${d.body_mass_g.toFixed(1)} 克，喙长 ${d.bill_length_mm?.toFixed(1)??'未记录'} 毫米，喙深 ${d.bill_depth_mm?.toFixed(1)??'未记录'} 毫米`)
-      .on('pointerenter',mini?null:function(e,d){d3.select(this).raise();focusSpecies(d.species);})
-      .on('pointermove',mini?null:(e,d)=>tooltip(e,d)).on('pointerleave',()=>{focusSpecies(null);hideTooltip();}).on('click',mini?null:(_,d)=>onFocus(d))
-      .on('focus',mini?null:(e,d)=>{d3.select(e.target).raise();focusSpecies(d.species);const b=e.target.getBoundingClientRect();tooltip({clientX:b.x,clientY:b.y},d);}).on('blur',()=>{focusSpecies(null);hideTooltip();})
-      .on('keydown',mini?null:(e,d)=>{if(e.key==='Enter'||e.key===' '){e.preventDefault();onFocus(d);}});
-    if(options.animate&&!matchMedia('(prefers-reduced-motion: reduce)').matches){
-      points.selectAll('circle').attr('cx',d=>previous.get(d.id)?.x??x(d[view.x])).attr('cy',d=>previous.get(d.id)?.y??y(d[view.y])).attr('r',d=>previous.get(d.id)?.r??radii(d)).attr('fill',d=>previous.get(d.id)?.fill??bubbleFill(d,shade)).transition('appearance').duration(420).attr('cx',d=>x(d[view.x])).attr('cy',d=>y(d[view.y])).attr('r',radii).attr('fill',d=>bubbleFill(d,shade));
-      points.selectAll('circle').attr('opacity',d=>previous.has(d.id)?1:0).transition('fade').duration(420).attr('opacity',1);
-    }
-    if(options.mode==='species')plot.append('g').selectAll('text').data(observations).join('text').attr('class','species-label').attr('x',d=>x(d[view.x])).attr('y',d=>y(d[view.y])-radii(d)-10).attr('text-anchor','middle').text(d=>d.name);
-    brush=d3.brush().extent([[0,0],[width,height]]).on('end',e=>{if(sync)return;onBrush(e.selection?{[view.x]:[x.invert(e.selection[0][0]),x.invert(e.selection[1][0])],[view.y]:[y.invert(e.selection[1][1]),y.invert(e.selection[0][1])]}:null);});
-    brushLayer=plot.append('g').attr('class','brush').call(brush).style('display',!mini&&options.brush&&options.mode!=='species'?null:'none');
-    setRange(options.range||null);
-    if(!rows.length)plot.append('text').attr('class','empty-chart').attr('x',width/2).attr('y',height/2).attr('text-anchor','middle').text(mini?'在探索页保留一组样本':'当前条件没有有效样本');
+  const svg = d3.select(node);
+  const plot = svg.append('g').attr('class', 'frame');
+  const grid = plot.append('g').attr('class', 'grid');
+  const horizontal = plot.append('g').attr('class', 'axis axis-x');
+  const vertical = plot.append('g').attr('class', 'axis axis-y');
+  const xLabel = plot.append('text').attr('class', 'axis-label').attr('text-anchor', 'middle');
+  const yLabel = plot.append('text').attr('class', 'axis-label');
+  const regions = plot.append('g').attr('class', 'selection-regions').attr('pointer-events', 'none');
+  const points = plot.append('g').attr('class', 'points');
+  const labels = plot.append('g').attr('class', 'mean-labels').attr('pointer-events', 'none');
+  const halo = plot.append('circle').attr('class', 'focus-halo').attr('fill', 'none').attr('pointer-events', 'none').attr('opacity', 0);
+  const brushLayer = plot.append('g').attr('class', 'brush');
+  const empty = plot.append('text').attr('class', 'empty-chart').attr('text-anchor', 'middle');
+  let rows = [], options = {}, brush, sync = false, x, y, width, height, selectedIds = null, hoveredSpecies = null, pinnedId = null, view = PLOT_VIEWS.body;
+
+  function showHalo(record, instant = false) {
+    if (!record || !x || !y) { halo.interrupt('halo').attr('opacity', 0); return; }
+    halo.interrupt('halo').attr('cx', x(record[view.x])).attr('cy', y(record[view.y])).attr('stroke', COLOR[record.species]).attr('stroke-width', 1);
+    const radius = bubbleRadius(record, options) + 4;
+    if (!instant && motionAllowed()) halo.attr('r', radius + 3).attr('opacity', 0).transition('halo').duration(190).ease(d3.easeCubicOut).attr('r', radius).attr('opacity', .5);
+    else halo.attr('r', radius).attr('opacity', .5);
+  }
+  function restoreHalo() {
+    const pinned = points.selectAll('circle.bubble').data().find(record => record.id === pinnedId);
+    showHalo(pinned, true);
+  }
+  function draw(nextRows, nextOptions = {}) {
+    rows = nextRows; options = nextOptions; view = PLOT_VIEWS[options.plot || 'body']; selectedIds = null; hoveredSpecies = null;
+    const mini = Boolean(options.mini), outerWidth = Math.max(280, Math.floor(node.getBoundingClientRect().width || node.parentElement.clientWidth || 500));
+    const outerHeight = mini ? 270 : outerWidth < 550 ? 345 : (globalThis.innerHeight || 900) < 800 ? 330 : 400;
+    const m = { left: mini ? 47 : 57, right: 22, top: 28, bottom: 52 };
+    width = outerWidth - m.left - m.right; height = outerHeight - m.top - m.bottom;
+    const animated = Boolean(options.animate && motionAllowed() && !node.closest('[hidden]'));
+    svg.attr('viewBox', `0 0 ${outerWidth} ${outerHeight}`).attr('aria-label', `企鹅${view.title}气泡图`);
+    plot.attr('transform', `translate(${m.left},${m.top})`);
+    x = d3.scaleLinear().domain(BUBBLE_FIELDS[view.x].domain).range([0, width]);
+    y = d3.scaleLinear().domain(BUBBLE_FIELDS[view.y].domain).range([height, 0]);
+    const xAxis = d3.axisBottom(x).ticks(outerWidth < 500 ? 4 : 7).tickSizeOuter(0);
+    const yAxis = d3.axisLeft(y).ticks(mini ? 4 : 5).tickFormat(d3.format('~f')).tickSizeOuter(0);
+    const gridAxis = d3.axisLeft(y).ticks(mini ? 4 : 5).tickSize(-width).tickFormat('');
+    [horizontal, vertical, grid].forEach(axis => { axis.interrupt('axes'); axis.selectAll('*').interrupt('axes'); });
+    horizontal.attr('transform', `translate(0,${height})`);
+    if (animated) {
+      horizontal.transition('axes').duration(460).ease(d3.easeCubicInOut).call(xAxis);
+      vertical.transition('axes').duration(460).ease(d3.easeCubicInOut).call(yAxis);
+      grid.transition('axes').duration(460).ease(d3.easeCubicInOut).call(gridAxis);
+    } else { horizontal.call(xAxis); vertical.call(yAxis); grid.call(gridAxis); }
+    yLabel.attr('y', -13).text(`${options.mode === 'species' ? '平均' : ''}${BUBBLE_FIELDS[view.y].label} / ${BUBBLE_FIELDS[view.y].unit}`);
+    xLabel.attr('x', width / 2).attr('y', height + 40).text(`${options.mode === 'species' ? '平均' : ''}${BUBBLE_FIELDS[view.x].label} / ${BUBBLE_FIELDS[view.x].unit}`);
+    const visibleRules = (options.selection || []).filter(rule => rule.kind === 'range' && (rule.range[view.x] || rule.range[view.y])).slice(-4);
+    regions.selectAll('rect').data(visibleRules).join('rect').each(function(rule) {
+      const rx = rule.range[view.x] || BUBBLE_FIELDS[view.x].domain, ry = rule.range[view.y] || BUBBLE_FIELDS[view.y].domain;
+      d3.select(this).attr('x', x(rx[0])).attr('y', y(ry[1])).attr('width', x(rx[1]) - x(rx[0])).attr('height', y(ry[0]) - y(ry[1])).attr('fill', 'none').attr('stroke', rule.op === 'subtract' ? '#b17c58' : '#386a5c').attr('stroke-dasharray', rule.op === 'subtract' ? '3 3' : '7 4').attr('stroke-width', 1.2);
+    });
+    const observations = options.mode === 'species' ? speciesBubbles(rows, options.plot) : rows.map(row => ({ ...row, id: row.record_id }));
+    const radius = record => bubbleRadius(record, options), shade = options.shade || 'bill_depth_mm';
+    const joined = points.selectAll('circle.record-point').data(observations, record => record.id);
+    const exiting = joined.exit().interrupt('geometry').interrupt('reveal').interrupt('exit').attr('class', 'record-point bubble-exit').attr('aria-hidden', 'true').attr('role', null).attr('tabindex', null).attr('data-record', null).style('pointer-events', 'none');
+    if (animated) exiting.transition('exit').duration(180).ease(d3.easeCubicIn).attr('r', 0).style('fill-opacity', 0).remove();
+    else exiting.remove();
+    const entering = joined.enter().append('circle').attr('cx', record => x(record[view.x])).attr('cy', record => y(record[view.y])).attr('fill', record => bubbleFill(record, shade)).attr('r', animated ? 0 : radius).style('fill-opacity', animated ? 0 : 1);
+    const current = entering.merge(joined).interrupt('geometry').interrupt('reveal').interrupt('exit').attr('class', 'record-point bubble').attr('aria-hidden', null).style('pointer-events', null)
+      .attr('data-record', record => record.id).attr('data-size-value', record => options.mode === 'species' ? record.n : options.size === 'equal' ? null : record[options.size || 'bill_length_mm'])
+      .attr('data-shade-value', record => shade === 'none' ? null : record[shade]).attr('tabindex', mini ? null : 0).attr('role', mini ? null : 'button')
+      .attr('aria-label', record => `${record.aggregate ? `${record.name}，${record.n} 条样本，均值` : `${record.record_id}，个体`}，鳍长 ${record.flipper_length_mm.toFixed(1)} 毫米，体重 ${record.body_mass_g.toFixed(1)} 克，喙长 ${record.bill_length_mm?.toFixed(1) ?? '未记录'} 毫米，喙深 ${record.bill_depth_mm?.toFixed(1) ?? '未记录'} 毫米`)
+      .on('pointerenter', mini ? null : function(event, record) { d3.select(this).raise(); focusSpecies(record.species); showHalo(record); })
+      .on('pointermove', mini ? null : (event, record) => tooltip(event, record))
+      .on('pointerleave', () => { focusSpecies(null); hideTooltip(); restoreHalo(); })
+      .on('click', mini ? null : (_, record) => onFocus(record))
+      .on('focus', mini ? null : (event, record) => { d3.select(event.target).raise(); focusSpecies(record.species); showHalo(record); const box = event.target.getBoundingClientRect(); tooltip({ clientX: box.x, clientY: box.y }, record); })
+      .on('blur', () => { focusSpecies(null); hideTooltip(); restoreHalo(); })
+      .on('keydown', mini ? null : (event, record) => { if (event.key === 'Enter' || event.key === ' ') { event.preventDefault(); onFocus(record); } });
+    if (animated) {
+      current.transition('geometry').duration(480).ease(d3.easeCubicInOut).attr('cx', record => x(record[view.x])).attr('cy', record => y(record[view.y])).attr('r', radius).attr('fill', record => bubbleFill(record, shade));
+      current.transition('reveal').duration(300).ease(d3.easeCubicOut).style('fill-opacity', 1);
+    } else current.attr('cx', record => x(record[view.x])).attr('cy', record => y(record[view.y])).attr('r', radius).attr('fill', record => bubbleFill(record, shade)).style('fill-opacity', 1);
+    labels.selectAll('text').data(options.mode === 'species' ? observations : [], record => record.id).join('text').attr('class', 'species-label').attr('x', record => x(record[view.x])).attr('y', record => y(record[view.y]) - radius(record) - 10).attr('text-anchor', 'middle').text(record => record.name);
+    brush = d3.brush().extent([[0, 0], [width, height]]).on('end', event => { if (!sync) onBrush(event.selection ? { [view.x]: [x.invert(event.selection[0][0]), x.invert(event.selection[1][0])], [view.y]: [y.invert(event.selection[1][1]), y.invert(event.selection[0][1])] } : null); });
+    brushLayer.call(brush).style('display', !mini && options.brush && options.mode === 'individual' ? null : 'none');
+    setRange(options.range || null);
+    empty.attr('x', width / 2).attr('y', height / 2).text(rows.length ? '' : mini ? '在探索页保留一组样本' : '当前条件没有有效样本');
+    paintEmphasis(); restoreHalo();
   }
   function paintEmphasis() {
-    if(!points)return;
-    points.selectAll('circle').interrupt('fade').attr('opacity',d=>(!selectedIds||selectedIds.has(d.record_id)?1:.12)*(hoveredSpecies&&d.species!==hoveredSpecies?.2:1));
+    points.selectAll('circle.bubble').attr('opacity', record => (!selectedIds || selectedIds.has(record.record_id) ? 1 : .12) * (hoveredSpecies && record.species !== hoveredSpecies ? .2 : 1));
   }
-  function highlight(ids) { selectedIds=ids;paintEmphasis(); }
-  function focusSpecies(species) { hoveredSpecies=options.focusSpecies===false?null:species;paintEmphasis(); }
+  function highlight(ids) { selectedIds = ids; paintEmphasis(); }
+  function focusSpecies(species) { hoveredSpecies = options.focusSpecies === false ? null : species; paintEmphasis(); }
   function setRange(range) {
-    if(!brushLayer)return;
-    sync=true;brushLayer.call(brush.move,range?[[x(range[view.x][0]),y(range[view.y][1])],[x(range[view.x][1]),y(range[view.y][0])]]:null);sync=false;
+    if (!brush || !x || !y) return;
+    sync = true; brushLayer.call(brush.move, range ? [[x(range[view.x][0]), y(range[view.y][1])], [x(range[view.x][1]), y(range[view.y][0])]] : null); sync = false;
   }
-  function pin(id){if(points)points.selectAll('circle').attr('stroke',d=>d.id===id?'#203b37':'white').attr('stroke-width',d=>d.id===id?2.5:1);}
-  return {draw,highlight,setRange,pin,focusSpecies};
+  function pin(id) { pinnedId = id; points.selectAll('circle.bubble').classed('is-pinned', record => record.id === id).attr('stroke', record => record.id === id ? '#244c3e' : '#faf9f4').attr('stroke-width', record => record.id === id ? 2 : .85); restoreHalo(); }
+  return { draw, highlight, setRange, pin, focusSpecies };
 }
 
 export function drawSizeLegend(node,mode,size) {

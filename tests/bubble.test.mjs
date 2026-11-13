@@ -71,7 +71,7 @@ test('displayed colors become darker with larger measured bills for every specie
       const lightness=[13,17.5,22].map(bill_depth_mm=>context.d3.lab(bubbleFill({species,bill_depth_mm})).l);
       assert.ok(lightness[0]>lightness[1] && lightness[1]>lightness[2]);
     }
-    assert.equal(bubbleFill({species:'Adelie'},'none'),'#0072B2');
+    assert.equal(bubbleFill({species:'Adelie'},'none'),'#52758B');
   }finally{
     if(previous===undefined)delete globalThis.window;else globalThis.window=previous;
   }

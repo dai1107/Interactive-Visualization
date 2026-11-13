@@ -1,4 +1,4 @@
-import { BUBBLE_FIELDS } from './bubble-model.js?v=editorial-20261113b';
+import { BUBBLE_FIELDS } from './bubble-model.js?v=atelier-20261113c';
 
 const bonusD3 = window.d3;
 export function drawCohortDistribution(svg, comparison, onSelectRange = () => {}) {
@@ -9,7 +9,7 @@ export function drawCohortDistribution(svg, comparison, onSelectRange = () => {}
   root.selectAll('*').remove();
   root.append('title').text(`${meta.label}分布：选中样本与同年其余样本，纵轴为各组内占比`);
   const x = d.scaleLinear().domain(meta.domain).range([m.left, width - m.right]);
-  const cohorts = [comparison.selected, comparison.rest], colors = ['#176f65', '#b16b3b'];
+  const cohorts = [comparison.selected, comparison.rest], colors = ['#386a5c', '#b17c58'];
   const maximum = d.max(cohorts.flatMap(c => c.distribution.bins.map(b => b.share))) || .1;
   const y = d.scaleLinear().domain([0, maximum]).nice().range([height - m.bottom, m.top]);
   root.append('g').attr('transform', `translate(0,${height - m.bottom})`).call(d.axisBottom(x).ticks(width < 420 ? 4 : 6));

@@ -1,9 +1,9 @@
-import { setActivePage } from './layout.js?v=editorial-20261113b';
+import { setActivePage } from './layout.js?v=atelier-20261113c';
 import { SPECIES } from './data.js';
-import { BUBBLE_FIELDS, PLOT_VIEWS, copyScope, DEFAULT_SCOPE, selectedRows } from './bubble-model.js?v=editorial-20261113b';
+import { BUBBLE_FIELDS, PLOT_VIEWS, copyScope, DEFAULT_SCOPE, selectedRows } from './bubble-model.js?v=atelier-20261113c';
 import { SELECTION_OPERATIONS, copySelection, validateSelection, compareSets, hasSelection } from './selection-model.js';
-import { correlationLens } from './insight-model.js?v=editorial-20261113b';
-import { drawCorrelationLens, drawMetricComparison } from './insight-charts.js?v=editorial-20261113b';
+import { correlationLens } from './insight-model.js?v=atelier-20261113c';
+import { drawCorrelationLens, drawMetricComparison } from './insight-charts.js?v=atelier-20261113c';
 
 export function createEnhancements({ rows, getView, applyView, snapshots, filterGroup, onStory, announce }) {
   const byId = id => document.getElementById(id);
@@ -52,7 +52,7 @@ export function createEnhancements({ rows, getView, applyView, snapshots, filter
     byId('set-summary').textContent = ready ? `A 独有 ${sets.aOnly.length} · 重合 ${sets.intersection.length} · B 独有 ${sets.bOnly.length} · 并集 ${sets.union.length}` : '分别存入 A、B 后，可比较均值，也可把两组的交集、并集或差集送回主图。';
     for (const key of ['intersection', 'union', 'aOnly', 'bOnly']) byId('set-' + key).disabled = !ready || !sets[key].length;
     const strip = byId('set-overlap'); strip.replaceChildren();
-    if (ready && sets.union.length) for (const [key, label, color] of [['aOnly', 'A独有', '#176f65'], ['intersection', '重合', '#877b9b'], ['bOnly', 'B独有', '#b16b3b']]) {
+    if (ready && sets.union.length) for (const [key, label, color] of [['aOnly', 'A独有', '#386a5c'], ['intersection', '重合', '#877b9b'], ['bOnly', 'B独有', '#b17c58']]) {
       if (!sets[key].length) continue;
       const span = make('span', `${label} ${sets[key].length}`); span.style.flexGrow = sets[key].length; span.style.background = color; span.title = `${label} ${sets[key].length} / 并集 ${sets.union.length} 条`; strip.append(span);
     }
