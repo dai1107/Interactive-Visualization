@@ -1,7 +1,8 @@
+import { setActivePage, setActiveInspector } from './layout.js?v=editorial-20261113b';
 import { SPECIES } from './data.js';
-import { BUBBLE_FIELDS, PLOT_VIEWS, selectedRows, summarizePlot } from './bubble-model.js?v=bonus-20261113a';
-import { DISCOVERY_STEPS, discoveryView, cohortComparison, explorationRecord, validateNotebook, notebookPayload, recordMarkdown } from './bonus-model.js?v=bonus-20261113a';
-import { drawCohortDistribution, drawCohortComposition } from './bonus-charts.js?v=bonus-20261113a';
+import { BUBBLE_FIELDS, PLOT_VIEWS, selectedRows, summarizePlot } from './bubble-model.js?v=editorial-20261113b';
+import { DISCOVERY_STEPS, discoveryView, cohortComparison, explorationRecord, validateNotebook, notebookPayload, recordMarkdown } from './bonus-model.js?v=editorial-20261113b';
+import { drawCohortDistribution, drawCohortComposition } from './bonus-charts.js?v=editorial-20261113b';
 
 export function createBonusExperience({ rows, fingerprint, getView, applyView, captureOrigin, restoreOrigin, sexComparison, announce, onSelectRange }) {
   const find = id => document.getElementById(id);
@@ -15,6 +16,8 @@ export function createBonusExperience({ rows, fingerprint, getView, applyView, c
   }
   function leaveGuide() { if (step !== null) { step = null; renderGuide(); } }
   function renderGuide() {
+    find('discovery').hidden = step === null;
+    find('discovery-compare').hidden = step !== 4;
     find('discovery-title').textContent = step === null ? '从总体到局部，走一遍发现过程' : `${step + 1} / 5 · ${DISCOVERY_STEPS[step].title}`;
     find('discovery-question').textContent = step === null ? '点击开始，将依次比较总体、喙部、单一物种、局部范围和雌雄。手动调整即可转入自由探索；随时可恢复开始前的条件与 A/B 组。' : DISCOVERY_STEPS[step].question;
     find('discovery-prev').disabled = step === null || step === 0;
@@ -31,6 +34,8 @@ export function createBonusExperience({ rows, fingerprint, getView, applyView, c
   function go(index) {
     if (!origin) origin = captureOrigin();
     step = index;
+    setActivePage('explore');
+    setActiveInspector(index === 3 ? 'distribution' : 'relation');
     applyView(discoveryView(index));
     if (DISCOVERY_STEPS[index].compareSex) sexComparison(false);
     renderGuide(); announce(`已进入发现之旅第 ${index + 1} 步：${DISCOVERY_STEPS[index].title}`);
@@ -60,7 +65,7 @@ export function createBonusExperience({ rows, fingerprint, getView, applyView, c
       card.append(heading, make('p', `${PLOT_VIEWS[record.view.plot].title} · n=${stats.n} · r=${formatR(stats.r)} · ${new Date(record.createdAt).toLocaleString('zh-CN', { timeZone: 'Asia/Shanghai', hour12: false })}（北京时间）`), make('p', record.notes || '未填写观察'));
       const restore = make('button', '恢复这次探索'), remove = make('button', '删除记录');
       restore.className = 'outline-button'; remove.className = 'text-button';
-      restore.addEventListener('click', () => { leaveGuide(); applyView(record.view); announce('已恢复探索条件，统计由原始数据重新计算。'); find('explorer').scrollIntoView({ block: 'start' }); });
+      restore.addEventListener('click', () => { leaveGuide(); setActivePage('explore'); applyView(record.view); announce('已恢复探索条件，统计由原始数据重新计算。'); find('explorer').scrollIntoView({ block: 'start' }); });
       remove.addEventListener('click', () => { deleted = { record, index: records.indexOf(record) }; records = records.filter(r => r.id !== record.id); persist(); renderNotebook(); render(); });
       card.append(restore, remove); find('notebook-list').append(card);
     });
@@ -71,7 +76,7 @@ export function createBonusExperience({ rows, fingerprint, getView, applyView, c
     try {
       if (records.length >= 20) throw new Error('已达20条，请先导出备份或删除部分记录。');
       records.push(explorationRecord(rows(), getView(), fingerprint(), { title: find('notebook-title').value.trim() || (step === null ? PLOT_VIEWS[getView().plot].title : DISCOVERY_STEPS[step].title), notes: find('notebook-notes').value.trim() }));
-      persist(); renderNotebook(); render(); find('notebook-title').value = ''; find('notebook-notes').value = ''; find('notebook').open = true;
+      persist(); renderNotebook(); render(); find('notebook-title').value = ''; find('notebook-notes').value = ''; find('notebook').open = true; setActivePage('notebook');
       find('notebook-message').textContent = '已记录当前筛选、视角、编码和样本编号。'; announce('探索记录已保存。');
     } catch (error) { find('notebook-message').textContent = error.message; }
   }
@@ -81,7 +86,7 @@ export function createBonusExperience({ rows, fingerprint, getView, applyView, c
     find('discovery-prev').addEventListener('click', () => { if (step > 0) go(step - 1); });
     find('discovery-next').addEventListener('click', () => { if (step !== null && step < 4) go(step + 1); });
     find('discovery-free').addEventListener('click', leaveGuide);
-    find('discovery-restore').addEventListener('click', () => { if (!origin) return; const previous = origin; origin = null; step = null; restoreOrigin(previous); renderGuide(); announce('已恢复开始前的条件与 A/B 组。'); });
+    find('discovery-restore').addEventListener('click', () => { if (!origin) return; const previous = origin; origin = null; step = null; setActivePage('explore'); restoreOrigin(previous); renderGuide(); announce('已恢复开始前的条件与 A/B 组。'); });
     find('discovery-record').addEventListener('click', capture);
     find('cohort-example').addEventListener('click', () => { leaveGuide(); const view = getView(), p = PLOT_VIEWS[view.plot]; view.mode = 'individual'; delete view.scope.selection; view.scope.range = { [p.x]: [...p.defaults[0]], [p.y]: [...p.defaults[1]] }; applyView(view); });
     find('distribution-metric').addEventListener('change', e => { const view = getView(); view.distributionMetric = e.target.value; applyView(view, true); });

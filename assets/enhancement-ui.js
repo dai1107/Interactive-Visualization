@@ -1,8 +1,9 @@
+import { setActivePage } from './layout.js?v=editorial-20261113b';
 import { SPECIES } from './data.js';
-import { BUBBLE_FIELDS, PLOT_VIEWS, copyScope, DEFAULT_SCOPE, selectedRows } from './bubble-model.js?v=bonus-20261113a';
+import { BUBBLE_FIELDS, PLOT_VIEWS, copyScope, DEFAULT_SCOPE, selectedRows } from './bubble-model.js?v=editorial-20261113b';
 import { SELECTION_OPERATIONS, copySelection, validateSelection, compareSets, hasSelection } from './selection-model.js';
-import { correlationLens } from './insight-model.js?v=bonus-20261113a';
-import { drawCorrelationLens, drawMetricComparison } from './insight-charts.js?v=bonus-20261113a';
+import { correlationLens } from './insight-model.js?v=editorial-20261113b';
+import { drawCorrelationLens, drawMetricComparison } from './insight-charts.js?v=editorial-20261113b';
 
 export function createEnhancements({ rows, getView, applyView, snapshots, filterGroup, onStory, announce }) {
   const byId = id => document.getElementById(id);
@@ -41,7 +42,7 @@ export function createEnhancements({ rows, getView, applyView, snapshots, filter
     byId('selection-rules').replaceChildren();
     const rules = [...(view.scope.selection || []), ...(view.scope.range ? [{ op: 'replace', label: '当前矩形范围' }] : [])];
     rules.forEach((rule, i) => { const chip = make('li', `${i + 1} ${SELECTION_OPERATIONS[rule.op]} · ${rule.label}`); chip.title = rule.label; byId('selection-rules').append(chip); });
-    byId('selection-caption').textContent = rules.length ? `${rules.length} 步组合 · 当前 ${chosen.length} 条。切换体型/喙部可继续跨指标选择；分类、年份或个体/均值视图改变会清除局部选择。` : '拖动主图、松开完成选择，或点击分布柱选择。交集与减选在首次使用时以当前筛选的全部样本为起点。';
+    byId('selection-caption').textContent = rules.length ? `${rules.length} 步组合 · ${chosen.length} 条已选中。切换体型、喙部视角可继续跨指标选择。` : '可在主图框选，也可从分布反向选择。';
     byId('lens-scope').textContent = `与主图同一批 ${chosen.length} 条个体 · ${PLOT_VIEWS[view.plot].title} · 按${groupBy === 'species' ? '物种' : '性别'}拆分`;
     drawCorrelationLens(byId('correlation-lens'), lens, id => filterGroup(groupBy, id));
     byId('lens-finding').textContent = chosen.length < 3 ? '当前样本不足，扩大选择后再比较。' : lens.reversed ? `方向发生逆转：当前总体相关为${lens.total.r < 0 ? '负' : '正'}，各个可计算分组内均为${lens.total.r < 0 ? '正' : '负'}。分组混合改变了总体关系。` : `总体 r=${lens.total.r === null ? '不可计算' : lens.total.r.toFixed(3)}；减去各组均值后，组内合并 r=${lens.within.r === null ? '不可计算' : lens.within.r.toFixed(3)}。比较两者，辨别组间差异与组内关系。`;
@@ -55,7 +56,7 @@ export function createEnhancements({ rows, getView, applyView, snapshots, filter
       if (!sets[key].length) continue;
       const span = make('span', `${label} ${sets[key].length}`); span.style.flexGrow = sets[key].length; span.style.background = color; span.title = `${label} ${sets[key].length} / 并集 ${sets.union.length} 条`; strip.append(span);
     }
-    if (byId('comparison').open) drawMetricComparison(byId('metric-comparison'), a, b);
+    if (byId('comparison').open && !byId('page-compare').hidden) drawMetricComparison(byId('metric-comparison'), a, b);
   }
   function initialize() {
     byId('selection-op').addEventListener('change', event => { operation = event.target.value; byId('selection-message').textContent = `下一次选择将使用“${SELECTION_OPERATIONS[operation]}”。`; });
@@ -69,6 +70,7 @@ export function createEnhancements({ rows, getView, applyView, snapshots, filter
     for (const key of Object.keys(labels)) byId('set-' + key).addEventListener('click', () => {
       const saved = snapshots(); if (!saved.a || !saved.b) return;
       const ids = compareSets(saved.a.rows, saved.b.rows)[key], view = getView();
+      setActivePage('explore');
       view.scope = { ...copyScope(DEFAULT_SCOPE), allYears: true, selection: [{ kind: 'ids', op: 'replace', ids, label: labels[key] }] }; view.mode = 'individual'; commit(view);
       byId('selection-message').textContent = `已将 ${labels[key]} 的 ${ids.length} 条原始记录送回主图。`; byId('explorer').scrollIntoView({ block: 'start' });
     });

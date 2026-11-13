@@ -1,5 +1,5 @@
 import { SPECIES } from './data.js';
-import { BUBBLE_FIELDS, PLOT_VIEWS, summarizePlot } from './bubble-model.js?v=bonus-20261113a';
+import { BUBBLE_FIELDS, PLOT_VIEWS, summarizePlot } from './bubble-model.js?v=editorial-20261113b';
 
 export function correlationLens(rows, plot = 'body', groupBy = 'species') {
   const p = PLOT_VIEWS[plot];

@@ -1,6 +1,6 @@
-import { LLM_ENDPOINT } from './llm-config.js?v=bonus-20261113a';
-import { llmViewKey, llmEvidence, validateLlmReply, llmConnectionURL, describeLlmView } from './llm-model.js?v=bonus-20261113a';
-import { selectedRows, summarizePlot } from './bubble-model.js?v=bonus-20261113a';
+import { LLM_ENDPOINT } from './llm-config.js?v=editorial-20261113b';
+import { llmViewKey, llmEvidence, validateLlmReply, llmConnectionURL, describeLlmView } from './llm-model.js?v=editorial-20261113b';
+import { selectedRows, summarizePlot } from './bubble-model.js?v=editorial-20261113b';
 
 export function createLlmAssistant({rows,fingerprint,getView,applyView,draft,announce}) {
   const find=id=>document.getElementById(id);

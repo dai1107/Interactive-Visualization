@@ -45,9 +45,9 @@ test('species bubbles use actual means and encode sample count in area', () => {
   assert.equal(areaRadius(20, 0, 8), 0);
 });
 
-test('larger bubbles preserve true areas and depth shading uses a fixed scale', () => {
+test('individual bubbles preserve true areas and depth shading uses a fixed scale', () => {
   const a=bubbleRadius({bill_length_mm:35}),b=bubbleRadius({bill_length_mm:55});
-  assert.ok(b>10 && b>a);
+  assert.ok(b>0 && b>a);
   assert.ok(Math.abs((b/a)**2-55/35)<1e-12);
   assert.equal(shadeFraction(13),0);
   assert.equal(shadeFraction(22),1);

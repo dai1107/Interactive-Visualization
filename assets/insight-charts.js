@@ -1,4 +1,4 @@
-import { metricComparison } from './insight-model.js?v=bonus-20261113a';
+import { metricComparison } from './insight-model.js?v=editorial-20261113b';
 const insightD3 = window.d3;
 
 export function drawCorrelationLens(node, lens, onGroup = () => {}) {
@@ -8,8 +8,8 @@ export function drawCorrelationLens(node, lens, onGroup = () => {}) {
   const height = rows.length * 49 + 56, x = d.scaleLinear().domain([-1, 1]).range([left, width - right]);
   const root = d.select(node).attr('viewBox', `0 0 ${width} ${height}`); root.selectAll('*').remove();
   root.append('title').text('相关性透镜：总体、各分组与减去组均值后的合并相关，统一使用负一到正一的刻度');
-  root.append('rect').attr('x', x(-1)).attr('y', 12).attr('width', x(0) - x(-1)).attr('height', height - 49).attr('fill', '#fbf1e9');
-  root.append('rect').attr('x', x(0)).attr('y', 12).attr('width', x(1) - x(0)).attr('height', height - 49).attr('fill', '#edf5ef');
+  root.append('rect').attr('x', x(-1)).attr('y', 12).attr('width', x(0) - x(-1)).attr('height', height - 49).attr('fill', '#f2ece3');
+  root.append('rect').attr('x', x(0)).attr('y', 12).attr('width', x(1) - x(0)).attr('height', height - 49).attr('fill', '#edf0e7');
   root.append('line').attr('x1', x(0)).attr('x2', x(0)).attr('y1', 12).attr('y2', height - 37).attr('stroke', '#b4c6bc').attr('stroke-dasharray', '3 4');
   rows.forEach((row, i) => {
     const y = 34 + i * 49, group = root.append('g');

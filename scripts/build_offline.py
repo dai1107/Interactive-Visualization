@@ -3,17 +3,32 @@ import base64
 import json
 import re
 import sys
+from html.parser import HTMLParser
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[1]
 
 
+class ControlIDs(HTMLParser):
+    def __init__(self):
+        super().__init__()
+        self.seen = set()
+
+    def handle_starttag(self, tag, attrs):
+        control_id = dict(attrs).get('id')
+        if control_id:
+            if control_id in self.seen:
+                raise RuntimeError(f'Duplicate HTML control ID: {control_id}')
+            self.seen.add(control_id)
+
+
 def build(destination):
     html = (ROOT / 'index.html').read_text(encoding='utf-8')
-    css = (ROOT / 'assets/style.css').read_text(encoding='utf-8') + '\n' + (ROOT / 'assets/refinement.css').read_text(encoding='utf-8')
+    ControlIDs().feed(html)
+    css = (ROOT / 'assets/style.css').read_text(encoding='utf-8')
     csv = (ROOT / 'EDA_企鹅数据探索/penguins.csv').read_text(encoding='utf-8')
     modules = []
-    for filename in ['data.js', 'selection-model.js', 'bubble-model.js', 'bubble-chart.js', 'bonus-model.js', 'bonus-charts.js', 'bonus-experience.js', 'llm-config.js', 'llm-model.js', 'llm-ui.js', 'insight-model.js', 'insight-charts.js', 'enhancement-ui.js', 'bubble-app.js']:
+    for filename in ['layout.js', 'data.js', 'selection-model.js', 'bubble-model.js', 'bubble-chart.js', 'bonus-model.js', 'bonus-charts.js', 'bonus-experience.js', 'llm-config.js', 'llm-model.js', 'llm-ui.js', 'insight-model.js', 'insight-charts.js', 'enhancement-ui.js', 'bubble-app.js']:
         source = (ROOT / 'assets' / filename).read_text(encoding='utf-8')
         source = re.sub(r'^import .+?;\s*$', '', source, flags=re.M)
         source = re.sub(r'^export ', '', source, flags=re.M)
@@ -24,7 +39,6 @@ def build(destination):
             source = source.replace(loader, 'const csvText=' + json.dumps(csv, ensure_ascii=False) + ';state.model=parsePenguins(csvText);state.sourceHash=csvFingerprint(csvText);experience.initialize();llmAssistant.initialize();enhancements.initialize();')
         modules.append(source)
     javascript = '\n'.join(modules).replace('</script', '<\\/script')
-    html = html.replace('<link rel="stylesheet" href="assets/refinement.css?v=bonus-20261113a">', '')
     html, styles = re.subn(r'<link rel="stylesheet" href="assets/style\.css[^\"]*">', lambda _: '<style>' + css + '</style>', html)
     html, d3_count = re.subn(r'<script src="vendor/d3\.v7\.min\.js" defer></script>', '', html)
     html, app_count = re.subn(r'<script type="module" src="assets/bubble-app\.js[^\"]*"></script>', '', html)

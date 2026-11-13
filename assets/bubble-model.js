@@ -76,7 +76,7 @@ export function areaRadius(value, maximum, maxRadius) {
 export function bubbleRadius(row, { mode = 'individual', size = 'bill_length_mm', mini = false } = {}) {
   if (mode === 'species') return areaRadius(row.n, 151, 34);
   if (size === 'equal') return mini ? 3.8 : 5;
-  return areaRadius(row[size], BUBBLE_FIELDS[size]?.maximum || 60, mini ? 6.5 : 14);
+  return areaRadius(row[size], BUBBLE_FIELDS[size]?.maximum || 60, mini ? 5.5 : 9);
 }
 export function shadeFraction(value, field = 'bill_depth_mm') {
   const domain = BUBBLE_FIELDS[field]?.domain;

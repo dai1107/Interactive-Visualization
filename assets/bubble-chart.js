@@ -1,5 +1,5 @@
 import { SPECIES } from './data.js';
-import { BUBBLE_FIELDS, PLOT_VIEWS, bubbleRadius, shadeFraction, speciesBubbles } from './bubble-model.js?v=bonus-20261113a';
+import { BUBBLE_FIELDS, PLOT_VIEWS, bubbleRadius, shadeFraction, speciesBubbles } from './bubble-model.js?v=editorial-20261113b';
 const d3 = window.d3;
 export const COLOR = Object.fromEntries(SPECIES.map(s => [s.id,s.color]));
 
@@ -8,8 +8,8 @@ export function bubbleFill(row, shade = 'bill_depth_mm') {
   const fraction = shadeFraction(row[shade], shade);
   if (fraction === null) return '#aeb9b3';
   const color = d3.hcl(COLOR[row.species]);
-  color.l = 86 - 42 * fraction;
-  color.c *= .5 + .5 * fraction;
+  color.l = 78 - 35 * fraction;
+  color.c *= .45 + .4 * fraction;
   return color.formatHex();
 }
 
@@ -19,7 +19,7 @@ export function createBubbleChart(node, { onBrush = () => {}, onFocus = () => {}
   function draw(nextRows,nextOptions={}) {
     const previous=new Map(points?points.selectAll('circle').nodes().map(n=>[n.__data__.id,{x:+n.getAttribute('cx'),y:+n.getAttribute('cy'),r:+n.getAttribute('r'),fill:n.getAttribute('fill')}]):[]);
     rows=nextRows;options=nextOptions;view=PLOT_VIEWS[options.plot||'body'];selectedIds=null;hoveredSpecies=null;
-    const mini=Boolean(options.mini),outerWidth=Math.max(280,Math.floor(node.parentElement.clientWidth||500)),outerHeight=mini?250:outerWidth<550?350:430;
+    const mini=Boolean(options.mini),outerWidth=Math.max(280,Math.floor(node.parentElement.clientWidth||500)),outerHeight=mini?270:outerWidth<550?345:(globalThis.innerHeight||900)<800?330:400;
     m={left:mini?47:57,right:22,top:28,bottom:52};width=outerWidth-m.left-m.right;height=outerHeight-m.top-m.bottom;
     svg.attr('viewBox',`0 0 ${outerWidth} ${outerHeight}`).attr('aria-label',`企鹅${view.title}气泡图`);svg.selectAll('*').interrupt().interrupt('appearance').interrupt('fade');svg.selectAll('g.frame').remove();
     plot=svg.append('g').attr('class','frame').attr('transform',`translate(${m.left},${m.top})`);
@@ -29,7 +29,6 @@ export function createBubbleChart(node, { onBrush = () => {}, onFocus = () => {}
     plot.append('g').attr('class','axis').call(d3.axisLeft(y).ticks(mini?4:5).tickFormat(d3.format('~f')).tickSizeOuter(0));
     plot.append('text').attr('class','axis-label').attr('y',-13).text(`${options.mode==='species'?'平均':''}${BUBBLE_FIELDS[view.y].label} / ${BUBBLE_FIELDS[view.y].unit}`);
     plot.append('text').attr('class','axis-label').attr('x',width/2).attr('y',height+40).attr('text-anchor','middle').text(`${options.mode==='species'?'平均':''}${BUBBLE_FIELDS[view.x].label} / ${BUBBLE_FIELDS[view.x].unit}`);
-    if(!mini)plot.append('text').attr('class','watermark').attr('x',width-6).attr('y',height-14).attr('text-anchor','end').text(options.yearLabel||'');
     const visibleRules=(options.selection||[]).filter(rule=>rule.kind==='range'&&(rule.range[view.x]||rule.range[view.y])).slice(-4);
     const regionLayer=plot.append('g').attr('class','selection-regions').attr('pointer-events','none');
     visibleRules.forEach(rule=>{const rx=rule.range[view.x]||BUBBLE_FIELDS[view.x].domain,ry=rule.range[view.y]||BUBBLE_FIELDS[view.y].domain;regionLayer.append('rect').attr('x',x(rx[0])).attr('y',y(ry[1])).attr('width',x(rx[1])-x(rx[0])).attr('height',y(ry[0])-y(ry[1])).attr('fill','none').attr('stroke',rule.op==='subtract'?'#b16b3b':'#176f65').attr('stroke-dasharray',rule.op==='subtract'?'3 3':'7 4').attr('stroke-width',1.4);});
@@ -53,7 +52,7 @@ export function createBubbleChart(node, { onBrush = () => {}, onFocus = () => {}
     brush=d3.brush().extent([[0,0],[width,height]]).on('end',e=>{if(sync)return;onBrush(e.selection?{[view.x]:[x.invert(e.selection[0][0]),x.invert(e.selection[1][0])],[view.y]:[y.invert(e.selection[1][1]),y.invert(e.selection[0][1])]}:null);});
     brushLayer=plot.append('g').attr('class','brush').call(brush).style('display',!mini&&options.brush&&options.mode!=='species'?null:'none');
     setRange(options.range||null);
-    if(!rows.length)plot.append('text').attr('class','empty-chart').attr('x',width/2).attr('y',height/2).attr('text-anchor','middle').text('当前条件没有有效样本');
+    if(!rows.length)plot.append('text').attr('class','empty-chart').attr('x',width/2).attr('y',height/2).attr('text-anchor','middle').text(mini?'在探索页保留一组样本':'当前条件没有有效样本');
   }
   function paintEmphasis() {
     if(!points)return;
