@@ -13,7 +13,7 @@ ROOT = Path(__file__).resolve().parents[1]
 class References(HTMLParser):
     def __init__(self):
         super().__init__()
-        self.paths = {'assets/data.js', 'assets/bubble-model.js', 'assets/bubble-chart.js', 'assets/bonus-model.js?v=bonus-20261112d', 'assets/bonus-charts.js?v=bonus-20261112d', 'assets/bonus-experience.js?v=bonus-20261112d', './?v=llm-20261112e', 'assets/llm-config.js?v=llm-20261112e', 'assets/llm-model.js?v=llm-20261112e', 'assets/llm-ui.js?v=llm-20261112e'}
+        self.paths = {'assets/selection-model.js', 'assets/insight-model.js', 'assets/insight-charts.js', 'assets/enhancement-ui.js', 'assets/data.js', 'assets/bubble-model.js', 'assets/bubble-chart.js', 'assets/bonus-model.js?v=bonus-20261113a', 'assets/bonus-charts.js?v=bonus-20261113a', 'assets/bonus-experience.js?v=bonus-20261113a', './?v=bonus-20261113a', 'assets/llm-config.js?v=bonus-20261113a', 'assets/llm-model.js?v=bonus-20261113a', 'assets/llm-ui.js?v=bonus-20261113a'}
 
     def handle_starttag(self, tag, attrs):
         for key, value in attrs:

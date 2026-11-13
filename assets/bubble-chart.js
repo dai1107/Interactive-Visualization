@@ -1,5 +1,5 @@
 import { SPECIES } from './data.js';
-import { BUBBLE_FIELDS, PLOT_VIEWS, bubbleRadius, shadeFraction, speciesBubbles } from './bubble-model.js?v=bonus-20261112d';
+import { BUBBLE_FIELDS, PLOT_VIEWS, bubbleRadius, shadeFraction, speciesBubbles } from './bubble-model.js?v=bonus-20261113a';
 const d3 = window.d3;
 export const COLOR = Object.fromEntries(SPECIES.map(s => [s.id,s.color]));
 
@@ -30,6 +30,9 @@ export function createBubbleChart(node, { onBrush = () => {}, onFocus = () => {}
     plot.append('text').attr('class','axis-label').attr('y',-13).text(`${options.mode==='species'?'平均':''}${BUBBLE_FIELDS[view.y].label} / ${BUBBLE_FIELDS[view.y].unit}`);
     plot.append('text').attr('class','axis-label').attr('x',width/2).attr('y',height+40).attr('text-anchor','middle').text(`${options.mode==='species'?'平均':''}${BUBBLE_FIELDS[view.x].label} / ${BUBBLE_FIELDS[view.x].unit}`);
     if(!mini)plot.append('text').attr('class','watermark').attr('x',width-6).attr('y',height-14).attr('text-anchor','end').text(options.yearLabel||'');
+    const visibleRules=(options.selection||[]).filter(rule=>rule.kind==='range'&&(rule.range[view.x]||rule.range[view.y])).slice(-4);
+    const regionLayer=plot.append('g').attr('class','selection-regions').attr('pointer-events','none');
+    visibleRules.forEach(rule=>{const rx=rule.range[view.x]||BUBBLE_FIELDS[view.x].domain,ry=rule.range[view.y]||BUBBLE_FIELDS[view.y].domain;regionLayer.append('rect').attr('x',x(rx[0])).attr('y',y(ry[1])).attr('width',x(rx[1])-x(rx[0])).attr('height',y(ry[0])-y(ry[1])).attr('fill','none').attr('stroke',rule.op==='subtract'?'#b16b3b':'#176f65').attr('stroke-dasharray',rule.op==='subtract'?'3 3':'7 4').attr('stroke-width',1.4);});
     points=plot.append('g').attr('class','points');
     const observations=options.mode==='species'?speciesBubbles(rows,options.plot):rows.map(r=>({...r,id:r.record_id}));
     const radii=d=>bubbleRadius(d,options),shade=options.shade||'bill_depth_mm';
@@ -47,7 +50,7 @@ export function createBubbleChart(node, { onBrush = () => {}, onFocus = () => {}
       points.selectAll('circle').attr('opacity',d=>previous.has(d.id)?1:0).transition('fade').duration(420).attr('opacity',1);
     }
     if(options.mode==='species')plot.append('g').selectAll('text').data(observations).join('text').attr('class','species-label').attr('x',d=>x(d[view.x])).attr('y',d=>y(d[view.y])-radii(d)-10).attr('text-anchor','middle').text(d=>d.name);
-    brush=d3.brush().extent([[0,0],[width,height]]).on('brush end',e=>{if(sync)return;onBrush(e.selection?{[view.x]:[x.invert(e.selection[0][0]),x.invert(e.selection[1][0])],[view.y]:[y.invert(e.selection[1][1]),y.invert(e.selection[0][1])]}:null);});
+    brush=d3.brush().extent([[0,0],[width,height]]).on('end',e=>{if(sync)return;onBrush(e.selection?{[view.x]:[x.invert(e.selection[0][0]),x.invert(e.selection[1][0])],[view.y]:[y.invert(e.selection[1][1]),y.invert(e.selection[0][1])]}:null);});
     brushLayer=plot.append('g').attr('class','brush').call(brush).style('display',!mini&&options.brush&&options.mode!=='species'?null:'none');
     setRange(options.range||null);
     if(!rows.length)plot.append('text').attr('class','empty-chart').attr('x',width/2).attr('y',height/2).attr('text-anchor','middle').text('当前条件没有有效样本');

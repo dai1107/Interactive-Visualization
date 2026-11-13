@@ -1,9 +1,9 @@
 import { SPECIES } from './data.js';
-import { BUBBLE_FIELDS, PLOT_VIEWS, selectedRows, summarizePlot } from './bubble-model.js?v=bonus-20261112d';
-import { DISCOVERY_STEPS, discoveryView, cohortComparison, explorationRecord, validateNotebook, notebookPayload, recordMarkdown } from './bonus-model.js?v=bonus-20261112d';
-import { drawCohortDistribution, drawCohortComposition } from './bonus-charts.js?v=bonus-20261112d';
+import { BUBBLE_FIELDS, PLOT_VIEWS, selectedRows, summarizePlot } from './bubble-model.js?v=bonus-20261113a';
+import { DISCOVERY_STEPS, discoveryView, cohortComparison, explorationRecord, validateNotebook, notebookPayload, recordMarkdown } from './bonus-model.js?v=bonus-20261113a';
+import { drawCohortDistribution, drawCohortComposition } from './bonus-charts.js?v=bonus-20261113a';
 
-export function createBonusExperience({ rows, fingerprint, getView, applyView, captureOrigin, restoreOrigin, sexComparison, announce }) {
+export function createBonusExperience({ rows, fingerprint, getView, applyView, captureOrigin, restoreOrigin, sexComparison, announce, onSelectRange }) {
   const find = id => document.getElementById(id);
   const make = (tag, text) => { const node = document.createElement(tag); if (text !== undefined) node.textContent = text; return node; };
   const formatR = value => value === null ? '不可计算' : value.toFixed(3);
@@ -41,7 +41,7 @@ export function createBonusExperience({ rows, fingerprint, getView, applyView, c
     find('distribution-metric').value = view.distributionMetric;
     find('cohort-caption').textContent = `${comparison.yearLabel} 的全部 ${comparison.referenceN} 条有效观测 = 选中 ${comparison.selected.n} 条 + 其余 ${comparison.rest.n} 条。参照范围不受物种、性别、岛屿筛选限制；两组没有重合。`;
     find('cohort-summary').textContent = `选中 r=${formatR(comparison.selected.r)}；其余 r=${formatR(comparison.rest.r)}（${PLOT_VIEWS[view.plot].title}）。${comparison.rest.n ? '' : '当前已选择全部参照样本，没有其余组可比较。'}`;
-    drawCohortDistribution(find('cohort-distribution'), comparison);
+    drawCohortDistribution(find('cohort-distribution'), comparison, onSelectRange);
     drawCohortComposition(find('cohort-composition'), comparison);
     find('notebook-capture').disabled = !comparison.selected.n || records.length >= 20;
     find('discovery-record').disabled = !comparison.selected.n || records.length >= 20;
@@ -83,8 +83,8 @@ export function createBonusExperience({ rows, fingerprint, getView, applyView, c
     find('discovery-free').addEventListener('click', leaveGuide);
     find('discovery-restore').addEventListener('click', () => { if (!origin) return; const previous = origin; origin = null; step = null; restoreOrigin(previous); renderGuide(); announce('已恢复开始前的条件与 A/B 组。'); });
     find('discovery-record').addEventListener('click', capture);
-    find('cohort-example').addEventListener('click', () => { leaveGuide(); const view = getView(), p = PLOT_VIEWS[view.plot]; view.mode = 'individual'; view.scope.range = { [p.x]: [...p.defaults[0]], [p.y]: [...p.defaults[1]] }; applyView(view); });
-    find('distribution-metric').addEventListener('change', e => { const view = getView(); view.distributionMetric = e.target.value; applyView(view); });
+    find('cohort-example').addEventListener('click', () => { leaveGuide(); const view = getView(), p = PLOT_VIEWS[view.plot]; view.mode = 'individual'; delete view.scope.selection; view.scope.range = { [p.x]: [...p.defaults[0]], [p.y]: [...p.defaults[1]] }; applyView(view); });
+    find('distribution-metric').addEventListener('change', e => { const view = getView(); view.distributionMetric = e.target.value; applyView(view, true); });
     SPECIES.forEach(group => { const label = make('span'), swatch = make('i'); swatch.className = 'swatch'; swatch.style.background = group.color; label.append(swatch, document.createTextNode(group.name)); find('cohort-legend').append(label); });
     find('notebook-capture').addEventListener('click', capture);
     find('notebook-undo').addEventListener('click', () => { if (!deleted || records.length >= 20) return; records.splice(deleted.index, 0, deleted.record); deleted = null; persist(); renderNotebook(); render(); });
@@ -93,7 +93,7 @@ export function createBonusExperience({ rows, fingerprint, getView, applyView, c
     find('notebook-import').addEventListener('change', async e => {
       try {
         const file = e.target.files[0]; if (!file) return;
-        if (file.size > 256 * 1024) throw new Error('文件不能超过256KB。');
+        if (file.size > 2 * 1024 * 1024) throw new Error('文件不能超过2MB。');
         const imported = validateNotebook(JSON.parse(await file.text()), rows(), fingerprint());
         const existing = new Set(records.map(r => r.id)), additions = imported.filter(r => !existing.has(r.id));
         if (records.length + additions.length > 20) throw new Error('合并后超过20条，请先导出备份或删除部分记录。');
@@ -105,5 +105,5 @@ export function createBonusExperience({ rows, fingerprint, getView, applyView, c
     catch { find('notebook-storage').textContent = '没有载入本地记录。可从匹配当前数据版本的 JSON 备份导入。'; }
     renderNotebook(); render();
   }
-  return { initialize, render, leaveGuide };
+  return { initialize, render, leaveGuide, go };
 }

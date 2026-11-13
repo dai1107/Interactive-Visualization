@@ -1,3 +1,4 @@
+import { copySelection, selectByRules } from './selection-model.js';
 import { SPECIES, filterPenguins, brushRows, summarize } from './data.js';
 
 export const YEARS = [2007, 2008, 2009];
@@ -50,12 +51,12 @@ export function describePlot(rows, plot = 'body') {
 }
 export const DEFAULT_SCOPE = { species: SPECIES.map(s => s.id), sex: 'all', island: 'all', year: 2007, allYears: false, range: null };
 export function copyScope(scope) {
-  return { ...scope, species: [...scope.species], range: scope.range ? Object.fromEntries(Object.entries(scope.range).map(([k,v]) => [k,[...v]])) : null };
+  return { ...scope, ...(scope.selection ? { selection: copySelection(scope.selection) } : {}), species: [...scope.species], range: scope.range ? Object.fromEntries(Object.entries(scope.range).map(([k,v]) => [k,[...v]])) : null };
 }
 export function filterScope(rows, scope, includeYear = true) {
   return filterPenguins(rows, scope.species, scope.sex).filter(r => (scope.island === 'all' || r.island === scope.island) && (!includeYear || scope.allYears || r.year === scope.year));
 }
-export function selectedRows(rows, scope) { return brushRows(filterScope(rows, scope), scope.range); }
+export function selectedRows(rows, scope) { return selectByRules(brushRows(filterScope(rows, scope), scope.range), scope.selection || []); }
 export function speciesBubbles(rows, plot = 'body') {
   return SPECIES.flatMap(s => {
     const group = rows.filter(r => r.species === s.id);

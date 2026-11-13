@@ -1,5 +1,6 @@
+import { validateSelection, SELECTION_OPERATIONS } from './selection-model.js';
 import { SPECIES, SEX_LABELS } from './data.js';
-import { BUBBLE_FIELDS, PLOT_VIEWS, YEARS, DEFAULT_SCOPE, copyScope, filterScope, selectedRows, summarizePlot } from './bubble-model.js?v=bonus-20261112d';
+import { BUBBLE_FIELDS, PLOT_VIEWS, YEARS, DEFAULT_SCOPE, copyScope, filterScope, selectedRows, summarizePlot } from './bubble-model.js?v=bonus-20261113a';
 
 export const DISCOVERY_STEPS = [
   { title: '看总体', question: '鳍长与体重看起来一起增加吗？先比较总体 r 和三个物种卡片。', plot: 'body' },
@@ -67,7 +68,10 @@ export function validateView(input) {
       range[field] = [...extent];
     }
   }
-  return { scope: { species: [...scope.species], sex: scope.sex, island: scope.island, year: scope.year, allYears: scope.allYears, range }, plot: input.plot, mode: input.mode, size: input.size, shade: input.shade, annualMetric: input.annualMetric, distributionMetric: input.distributionMetric, focusSpecies: input.focusSpecies !== false };
+  const selection = scope.selection === undefined ? undefined : validateSelection(scope.selection);
+  if (range && selection?.length) throw new Error('请使用单一的选择表达式。');
+  if (input.mode === 'species' && selection?.length) throw new Error('物种均值视图不接受个体选择表达式。');
+  return { scope: { ...(selection ? { selection } : {}), species: [...scope.species], sex: scope.sex, island: scope.island, year: scope.year, allYears: scope.allYears, range }, plot: input.plot, mode: input.mode, size: input.size, shade: input.shade, annualMetric: input.annualMetric, distributionMetric: input.distributionMetric, focusSpecies: input.focusSpecies !== false };
 }
 
 export function explorationRecord(rows, view, fingerprint, options = {}) {
@@ -106,6 +110,7 @@ export function recordMarkdown(record, rows) {
     '有效个体 n=' + stats.n + '，Pearson r=' + r + '。', '',
     '物种内：' + groups.map(g => g.name + ' n=' + g.n + '，r=' + (g.r === null ? '不可计算' : g.r.toFixed(3))).join('；') + '。', '',
     '框选：' + (view.scope.range ? Object.entries(view.scope.range).map(([field, extent]) => BUBBLE_FIELDS[field].label + ' ' + extent.join('—') + ' ' + BUBBLE_FIELDS[field].unit).join('；') : '无'), '',
+    '组合选择：' + (view.scope.selection?.length ? view.scope.selection.map((rule, i) => `${i + 1}. ${SELECTION_OPERATIONS[rule.op]} ${safe(rule.label)}`).join('；') : '无') + '。', '',
     '我的观察：' + safe(record.notes || '未填写'), '',
     '数据版本：' + record.sourceFingerprint + '。样本编号：' + record.ids.join(', ') + '。', '',
     '数据来源：[palmerpenguins](https://allisonhorst.github.io/palmerpenguins/)。仅作描述性相关；不同年份是不同观测样本，不表示个体成长。',

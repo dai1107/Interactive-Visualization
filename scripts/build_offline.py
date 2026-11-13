@@ -10,20 +10,21 @@ ROOT = Path(__file__).resolve().parents[1]
 
 def build(destination):
     html = (ROOT / 'index.html').read_text(encoding='utf-8')
-    css = (ROOT / 'assets/style.css').read_text(encoding='utf-8')
+    css = (ROOT / 'assets/style.css').read_text(encoding='utf-8') + '\n' + (ROOT / 'assets/refinement.css').read_text(encoding='utf-8')
     csv = (ROOT / 'EDA_企鹅数据探索/penguins.csv').read_text(encoding='utf-8')
     modules = []
-    for filename in ['data.js', 'bubble-model.js', 'bubble-chart.js', 'bonus-model.js', 'bonus-charts.js', 'bonus-experience.js', 'llm-config.js', 'llm-model.js', 'llm-ui.js', 'bubble-app.js']:
+    for filename in ['data.js', 'selection-model.js', 'bubble-model.js', 'bubble-chart.js', 'bonus-model.js', 'bonus-charts.js', 'bonus-experience.js', 'llm-config.js', 'llm-model.js', 'llm-ui.js', 'insight-model.js', 'insight-charts.js', 'enhancement-ui.js', 'bubble-app.js']:
         source = (ROOT / 'assets' / filename).read_text(encoding='utf-8')
         source = re.sub(r'^import .+?;\s*$', '', source, flags=re.M)
         source = re.sub(r'^export ', '', source, flags=re.M)
         if filename == 'bubble-app.js':
-            loader = "const response=await fetch(new URL('../EDA_企鹅数据探索/penguins.csv',import.meta.url));if(!response.ok)throw new Error(`CSV HTTP ${response.status}`);const csvText=await response.text();state.model=parsePenguins(csvText);state.sourceHash=csvFingerprint(csvText);experience.initialize();llmAssistant.initialize();"
+            loader = "const response=await fetch(new URL('../EDA_企鹅数据探索/penguins.csv',import.meta.url));if(!response.ok)throw new Error(`CSV HTTP ${response.status}`);const csvText=await response.text();state.model=parsePenguins(csvText);state.sourceHash=csvFingerprint(csvText);experience.initialize();llmAssistant.initialize();enhancements.initialize();"
             if loader not in source:
                 raise RuntimeError('App CSV loader changed; update this bundler before continuing.')
-            source = source.replace(loader, 'const csvText=' + json.dumps(csv, ensure_ascii=False) + ';state.model=parsePenguins(csvText);state.sourceHash=csvFingerprint(csvText);experience.initialize();llmAssistant.initialize();')
+            source = source.replace(loader, 'const csvText=' + json.dumps(csv, ensure_ascii=False) + ';state.model=parsePenguins(csvText);state.sourceHash=csvFingerprint(csvText);experience.initialize();llmAssistant.initialize();enhancements.initialize();')
         modules.append(source)
     javascript = '\n'.join(modules).replace('</script', '<\\/script')
+    html = html.replace('<link rel="stylesheet" href="assets/refinement.css?v=bonus-20261113a">', '')
     html, styles = re.subn(r'<link rel="stylesheet" href="assets/style\.css[^\"]*">', lambda _: '<style>' + css + '</style>', html)
     html, d3_count = re.subn(r'<script src="vendor/d3\.v7\.min\.js" defer></script>', '', html)
     html, app_count = re.subn(r'<script type="module" src="assets/bubble-app\.js[^\"]*"></script>', '', html)

@@ -1,7 +1,7 @@
-import { BUBBLE_FIELDS } from './bubble-model.js?v=bonus-20261112d';
+import { BUBBLE_FIELDS } from './bubble-model.js?v=bonus-20261113a';
 
 const bonusD3 = window.d3;
-export function drawCohortDistribution(svg, comparison) {
+export function drawCohortDistribution(svg, comparison, onSelectRange = () => {}) {
   const d = bonusD3, meta = BUBBLE_FIELDS[comparison.field];
   const width = Math.max(300, svg.parentElement.clientWidth), height = 265;
   const m = { top: 28, right: 14, bottom: 43, left: 45 };
@@ -21,6 +21,9 @@ export function drawCohortDistribution(svg, comparison) {
       .attr('x', b => x(b.lo) + (x(b.hi) - x(b.lo)) * (group ? .51 : .06))
       .attr('width', b => Math.max(1, (x(b.hi) - x(b.lo)) * .43))
       .attr('y', b => y(b.share)).attr('height', b => y(0) - y(b.share)).attr('fill', colors[group])
+      .attr('role', 'button').attr('tabindex', 0).attr('aria-label', b => `选择${meta.label}${b.lo.toFixed(1)}至${b.hi.toFixed(1)}${meta.unit}，当前${cohort.label}${b.count}条`).attr('class', 'interactive-bin')
+      .on('click', (_, b) => onSelectRange({ [comparison.field]: [b.lo, b.hi] }, b.hi < meta.domain[1] ? [comparison.field] : [], `${meta.label}分箱 ${b.lo.toFixed(1)}—${b.hi.toFixed(1)} ${meta.unit}`))
+      .on('keydown', (event, b) => { if (event.key === 'Enter' || event.key === ' ') { event.preventDefault(); onSelectRange({ [comparison.field]: [b.lo, b.hi] }, b.hi < meta.domain[1] ? [comparison.field] : [], `${meta.label}分箱 ${b.lo.toFixed(1)}—${b.hi.toFixed(1)} ${meta.unit}`); } })
       .append('title').text(b => `${cohort.label} · ${b.lo.toFixed(1)}—${b.hi.toFixed(1)} ${meta.unit}：${b.count} 条，占组内 ${(100 * b.share).toFixed(1)}%`);
   });
 }

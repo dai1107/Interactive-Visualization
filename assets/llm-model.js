@@ -1,6 +1,6 @@
 import { SPECIES, SEX_LABELS } from './data.js';
-import { BUBBLE_FIELDS, PLOT_VIEWS, selectedRows, summarizePlot } from './bubble-model.js?v=bonus-20261112d';
-import { validateView, cohortComparison } from './bonus-model.js?v=bonus-20261112d';
+import { BUBBLE_FIELDS, PLOT_VIEWS, selectedRows, summarizePlot } from './bubble-model.js?v=bonus-20261113a';
+import { validateView, cohortComparison } from './bonus-model.js?v=bonus-20261113a';
 
 export function llmViewKey(view) { return JSON.stringify(validateView(view)); }
 export function llmEvidence(rows, input, fingerprint) {
