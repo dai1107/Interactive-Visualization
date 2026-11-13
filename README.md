@@ -1,6 +1,6 @@
 # Palmer 企鹅观察室
 
-本地配色与动效细化版，待同步到GitHub Pages。当前线上仍为此前发布的版本。
+交互式企鹅探索工作台，包含多视图联动、组合选择、A/B比较与配色动效。
 
 ![探索工作台实际浏览器预览](docs/palette-motion-preview.jpg)
 
@@ -21,13 +21,13 @@
 
 本次配色、动效与验证见[配色与动效](docs/15_配色与动效.md)，工作区结构见[工作台布局与视觉重设计](docs/14_工作台布局与视觉重设计.md)。此前的设计文档保留为开发过程记录，当前界面以本README和最新文档为准。
 
-[此前发布的在线图表](https://dai1107.github.io/Interactive-Visualization/) · [GitHub仓库](https://github.com/dai1107/Interactive-Visualization)
+[在线交互图表](https://dai1107.github.io/Interactive-Visualization/) · [GitHub仓库](https://github.com/dai1107/Interactive-Visualization)
 
 本次仍不部署LLM，未连接的助手入口保持隐藏。[可选扩展说明](docs/12_LLM真实交互与部署.md)保留在源码中。
 
 ## 2026年11月13日完善
 
-本次增强已完成本地验证，尚未同步到GitHub Pages；上述线上地址在发布此版本后才会显示新增功能。
+本次增强已完成程序测试与实际浏览器验证，完整的布局、配色及动效说明见上方最新设计文档。
 
 新增[组合选择与相关性透镜](docs/13_组合选择与相关性透镜.md)：统一刻度比较总体、分组与组内合并相关；支持替换、加选、交集、减选、跨体型/喙部选择及撤销重做；分布柱可反向选择；A/B新增四指标均值差、重合构成和交并差集。改善字体层次、章节导航、键盘操作和手机布局。全部47项程序测试通过，实际浏览器已验证69条交集、23条减选、46条差集及记录恢复。
 
@@ -83,7 +83,7 @@ node --test tests/*.test.mjs
 
 47 项测试包含原始数据哈希、缺失处理、统计与历史模块，以及新增的五步引导、选中/其余同年分区、分布边界、JSON导入复核、Markdown导出、年份分区、岛屿和性别筛选、物种均值、面积比例、年度图统计口径、框选和快照独立性。浏览器交互验收见 [动态气泡与布局重做](docs/08_动态气泡与布局重做.md)。`tests/browser-smoke.cjs` 对应旧版界面，当前版本不使用该脚本。
 
-GitHub Pages 使用 `main` 分支根目录和 `.nojekyll`，支持项目子路径。后续提交推送后，可核对线上版本：
+GitHub Pages 使用 `main` 分支根目录和 `.nojekyll`，支持项目子路径。提交推送并完成发布后，可核对线上版本：
 
 ```powershell
 python scripts/check_site.py https://dai1107.github.io/Interactive-Visualization/
