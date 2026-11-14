@@ -50,7 +50,7 @@ test('DeepSeek-compatible request uses server credentials, bounded JSON output a
    assert.equal(options.headers.Authorization,'Bearer unit-test-key-only');
    const body=JSON.parse(options.body);assert.equal(body.model,'deepseek-flash');assert.equal(body.response_format.type,'json_object');assert.equal(body.thinking.type,'disabled');assert.equal(body.stream,false);
    assert.equal(JSON.parse(body.messages[1].content).evidence.selected.body.n,144);
-   assert.equal(options.redirect,'error');return responseFixture();
+   assert.equal(options.redirect,'manual');return responseFixture();
  }});
  assert.equal(calls,1);assert.equal(result.model,'TEST_FIXTURE_NOT_A_LIVE_MODEL');assert.equal(result.reply.proposal.view.scope.sex,'female');
  assert.ok(!JSON.stringify(result).includes(env.DEEPSEEK_API_KEY));assert.ok(!JSON.stringify(result).includes(env.LLM_ACCESS_TOKEN));
@@ -86,4 +86,16 @@ test('empty, truncated or invalid model suggestions never become successful gene
 test('provider failures are sanitized and never return provider secrets or raw error bodies',async()=>{
  const response=await handleLlmRequest(request(),env,async()=>new Response('error containing unit-test-key-only',{status:401}));
  assert.equal(response.status,502);const text=await response.text();assert.ok(!text.includes('unit-test-key-only'));assert.ok(text.includes('密钥无效'));
+});
+
+test('provider redirects are rejected without following their location or exposing credentials',async()=>{
+ let calls=0;
+ const response=await handleLlmRequest(request(),env,async(url,options)=>{
+   calls++;
+   assert.equal(options.redirect,'manual');
+   return new Response('private upstream redirect details',{status:307,headers:{Location:'https://unrelated.example/private'}});
+ });
+ assert.equal(calls,1);assert.equal(response.status,502);
+ const message=await response.text();assert.ok(message.includes('重定向'));
+ for(const sensitive of [env.DEEPSEEK_API_KEY,env.LLM_ACCESS_TOKEN,'unrelated.example','private upstream'])assert.ok(!message.includes(sensitive));
 });

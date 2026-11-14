@@ -28,11 +28,11 @@
 
 [在线交互图表](https://dai1107.github.io/Interactive-Visualization/) · [GitHub仓库](https://github.com/dai1107/Interactive-Visualization)
 
-LLM 助手后端已部署到 Cloudflare Workers，公开健康检查确认协议、运行配置及 GitHub Pages 来源可用。打开[探索助手](https://dai1107.github.io/Interactive-Visualization/#assistant)，输入与后端 `LLM_ACCESS_TOKEN` 一致的访问口令即可连接；DeepSeek API Key 只保存在后端。真实模型提问、候选操作应用与撤销仍需使用拥有者的口令完成线上验收，健康检查和程序测试不代表模型调用成功。完整步骤见[Cloudflare 部署说明](docs/16_Cloudflare_Workers部署.md)；[早期本机验收与 Vercel 部署记录](docs/12_LLM真实交互与部署.md)保留供参考。
+LLM 助手后端已部署到 Cloudflare Workers，公开健康检查确认协议、运行配置及 GitHub Pages 来源可用。打开[探索助手](https://dai1107.github.io/Interactive-Visualization/#assistant)，输入与后端 `LLM_ACCESS_TOKEN` 一致的访问口令即可连接；DeepSeek API Key 只保存在后端。2026年11月14日修复 Workers 重定向参数兼容问题后，拥有者已反馈线上真实提问返回模型回答；候选操作应用与撤销仍待单独验收。完整步骤见[Cloudflare 部署说明](docs/16_Cloudflare_Workers部署.md)；[早期本机验收与 Vercel 部署记录](docs/12_LLM真实交互与部署.md)保留供参考。
 
 ![探索助手实际浏览器预览](docs/assistant-preview.png)
 
-2026年11月14日接入检查：50项程序测试通过，其中3项验证独立 Worker 的运行时绑定、鉴权与数据版本，以及使用明确标记的模型夹具核对统计。实际浏览器验证了助手页导航、问题示例、空口令提示、342条全年份样本联动及320/390px窄屏布局；未读取拥有者密钥或发起真实模型提问。
+2026年11月14日接入检查：51项程序测试通过，其中3项验证独立 Worker 的运行时绑定、鉴权与数据版本，以及使用明确标记的模型夹具核对统计。实际浏览器验证了助手页导航、问题示例、空口令提示、342条全年份样本联动及320/390px窄屏布局。另用官方 Wrangler/workerd 复现并修复了请求参数问题；开发验证只使用无效测试密钥，真实模型回答由拥有者在网页中提问后确认。
 
 ## 2026年11月13日完善
 
@@ -90,7 +90,7 @@ Node.js 18+，无需第三方测试依赖：
 node --test tests/*.test.mjs
 ```
 
-50 项测试包含原始数据哈希、缺失处理、统计与历史模块，以及五步引导、选中/其余同年分区、分布边界、JSON导入复核、Markdown导出、年份分区、岛屿和性别筛选、物种均值、面积比例、年度图统计口径、框选、快照独立性及独立 Worker 协议。浏览器交互验收见 [动态气泡与布局重做](docs/08_动态气泡与布局重做.md)。`tests/browser-smoke.cjs` 对应旧版界面，当前版本不使用该脚本。
+51 项测试包含原始数据哈希、缺失处理、统计与历史模块，以及五步引导、选中/其余同年分区、分布边界、JSON导入复核、Markdown导出、年份分区、岛屿和性别筛选、物种均值、面积比例、年度图统计口径、框选、快照独立性、独立 Worker 协议及上游重定向拒绝。浏览器交互验收见 [动态气泡与布局重做](docs/08_动态气泡与布局重做.md)。`tests/browser-smoke.cjs` 对应旧版界面，当前版本不使用该脚本。
 
 GitHub Pages 使用 `main` 分支根目录和 `.nojekyll`，支持项目子路径。提交推送并完成发布后，可核对线上版本：
 

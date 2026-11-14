@@ -38,8 +38,11 @@ export async function askLlm({ payload, rows, csv, settings, fetchImpl=fetch }) 
   // DeepSeek defaults to thinking mode; disable it for bounded interactive latency.
   if(new URL(settings.base).hostname==='api.deepseek.com')body.thinking={type:'disabled'};
   let response;
-  try { response=await fetchImpl(settings.base+'/chat/completions',{method:'POST',headers:{'Content-Type':'application/json','Authorization':'Bearer '+settings.key},body:JSON.stringify(body),signal:AbortSignal.timeout(45000),redirect:'error'}); }
+  // Workers rejects redirect:'error' before sending a request. Inspect redirects
+  // manually so credentials are never forwarded to another address.
+  try { response=await fetchImpl(settings.base+'/chat/completions',{method:'POST',headers:{'Content-Type':'application/json','Authorization':'Bearer '+settings.key},body:JSON.stringify(body),signal:AbortSignal.timeout(45000),redirect:'manual'}); }
   catch { throw new LlmServiceError(504,'模型服务连接失败或超时，没有生成回答，请稍后手动重试。'); }
+  if(response.status>=300&&response.status<400){await response.body?.cancel().catch(()=>{});throw new LlmServiceError(502,'模型服务地址发生重定向，请检查后台 LLM_BASE_URL 配置。');}
   if(!response.ok){await response.body?.cancel().catch(()=>{});throw new LlmServiceError(response.status===429?429:502,response.status===401?'模型服务端密钥无效，请检查后台配置。':response.status===429?'模型服务暂时限流，请稍后重试。':'模型服务返回错误，未生成回答。');}
   let completion; try{completion=JSON.parse(await readLimited(response));}catch(error){if(error instanceof LlmServiceError)throw error;throw new LlmServiceError(502,'模型服务响应无法读取，请重试。');}
   const choice=completion.choices?.[0];
