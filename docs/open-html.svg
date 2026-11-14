@@ -1,0 +1,8 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="312" height="52" viewBox="0 0 312 52" role="img" aria-labelledby="title desc">
+  <title id="title">一键打开 HTML 在线版</title>
+  <desc id="desc">打开 GitHub Pages 上的企鹅观察室交互网页</desc>
+  <rect x="0.5" y="0.5" width="311" height="51" rx="6" fill="#1e443a" stroke="#47685b"/>
+  <path d="M23 18L35 26L23 34Z" fill="#d5bd92"/>
+  <text x="49" y="32" fill="#faf9f3" font-family="system-ui, 'Microsoft YaHei', 'PingFang SC', sans-serif" font-size="17" font-weight="600">一键打开 HTML 在线版</text>
+  <path d="M278 21H289V32M289 21L276 34" fill="none" stroke="#d5bd92" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"/>
+</svg>

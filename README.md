@@ -2,7 +2,11 @@
 
 交互式企鹅探索工作台，包含多视图联动、组合选择、A/B比较与配色动效。
 
-![探索工作台实际浏览器预览](docs/palette-motion-preview.jpg)
+[![一键打开 HTML 在线版](docs/open-html.svg)](https://dai1107.github.io/Interactive-Visualization/)
+
+点击按钮或下方预览图，直接打开在线交互网页，无需下载或启动服务。
+
+[![探索工作台实际浏览器预览](docs/palette-motion-preview.jpg)](https://dai1107.github.io/Interactive-Visualization/)
 
 研究问题：鳍长与体重的关系在不同物种和性别中是否一致？本项目将企鹅探索性分析转化为可操作、可比较、可复核的研究工作台。
 
