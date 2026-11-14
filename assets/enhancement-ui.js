@@ -1,9 +1,9 @@
-import { setActivePage } from './layout.js?v=atelier-20261113c';
+import { setActivePage } from './layout.js?v=assistant-20261113d';
 import { SPECIES } from './data.js';
-import { BUBBLE_FIELDS, PLOT_VIEWS, copyScope, DEFAULT_SCOPE, selectedRows } from './bubble-model.js?v=atelier-20261113c';
+import { BUBBLE_FIELDS, PLOT_VIEWS, copyScope, DEFAULT_SCOPE, selectedRows } from './bubble-model.js?v=assistant-20261113d';
 import { SELECTION_OPERATIONS, copySelection, validateSelection, compareSets, hasSelection } from './selection-model.js';
-import { correlationLens } from './insight-model.js?v=atelier-20261113c';
-import { drawCorrelationLens, drawMetricComparison } from './insight-charts.js?v=atelier-20261113c';
+import { correlationLens } from './insight-model.js?v=assistant-20261113d';
+import { drawCorrelationLens, drawMetricComparison } from './insight-charts.js?v=assistant-20261113d';
 
 export function createEnhancements({ rows, getView, applyView, snapshots, filterGroup, onStory, announce }) {
   const byId = id => document.getElementById(id);

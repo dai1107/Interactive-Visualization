@@ -1,0 +1,14 @@
+{
+  "$schema": "node_modules/wrangler/config-schema.json",
+  "name": "penguin-llm",
+  "main": "dist-worker/penguin-llm.mjs",
+  "compatibility_date": "2026-11-13",
+  "compatibility_flags": ["nodejs_compat"],
+  "workers_dev": true,
+  "build": {"command": "node scripts/build_worker.mjs"},
+  "vars": {
+    "LLM_BASE_URL": "https://api.deepseek.com",
+    "LLM_MODEL": "deepseek-flash",
+    "LLM_ALLOWED_ORIGINS": "https://dai1107.github.io"
+  }
+}

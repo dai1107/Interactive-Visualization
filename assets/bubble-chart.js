@@ -1,6 +1,6 @@
-import { motionAllowed } from './motion.js?v=atelier-20261113c';
+import { motionAllowed } from './motion.js?v=assistant-20261113d';
 import { SPECIES } from './data.js';
-import { BUBBLE_FIELDS, PLOT_VIEWS, bubbleRadius, shadeFraction, speciesBubbles } from './bubble-model.js?v=atelier-20261113c';
+import { BUBBLE_FIELDS, PLOT_VIEWS, bubbleRadius, shadeFraction, speciesBubbles } from './bubble-model.js?v=assistant-20261113d';
 const d3 = window.d3;
 export const COLOR = Object.fromEntries(SPECIES.map(s => [s.id,s.color]));
 

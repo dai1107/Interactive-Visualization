@@ -1,4 +1,4 @@
-import { BUBBLE_FIELDS } from './bubble-model.js?v=atelier-20261113c';
+import { BUBBLE_FIELDS } from './bubble-model.js?v=assistant-20261113d';
 
 const bonusD3 = window.d3;
 export function drawCohortDistribution(svg, comparison, onSelectRange = () => {}) {

@@ -1,6 +1,6 @@
 import { validateSelection, SELECTION_OPERATIONS } from './selection-model.js';
 import { SPECIES, SEX_LABELS } from './data.js';
-import { BUBBLE_FIELDS, PLOT_VIEWS, YEARS, DEFAULT_SCOPE, copyScope, filterScope, selectedRows, summarizePlot } from './bubble-model.js?v=atelier-20261113c';
+import { BUBBLE_FIELDS, PLOT_VIEWS, YEARS, DEFAULT_SCOPE, copyScope, filterScope, selectedRows, summarizePlot } from './bubble-model.js?v=assistant-20261113d';
 
 export const DISCOVERY_STEPS = [
   { title: '看总体', question: '鳍长与体重看起来一起增加吗？先比较总体 r 和三个物种卡片。', plot: 'body' },

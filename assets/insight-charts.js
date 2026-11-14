@@ -1,4 +1,4 @@
-import { metricComparison } from './insight-model.js?v=atelier-20261113c';
+import { metricComparison } from './insight-model.js?v=assistant-20261113d';
 const insightD3 = window.d3;
 
 export function drawCorrelationLens(node, lens, onGroup = () => {}) {

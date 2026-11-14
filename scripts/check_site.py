@@ -13,7 +13,7 @@ ROOT = Path(__file__).resolve().parents[1]
 class References(HTMLParser):
     def __init__(self):
         super().__init__()
-        self.paths = {'assets/motion.js?v=atelier-20261113c', 'assets/layout.js?v=atelier-20261113c', 'assets/selection-model.js', 'assets/insight-model.js', 'assets/insight-charts.js', 'assets/enhancement-ui.js', 'assets/data.js', 'assets/bubble-model.js', 'assets/bubble-chart.js', 'assets/bonus-model.js?v=atelier-20261113c', 'assets/bonus-charts.js?v=atelier-20261113c', 'assets/bonus-experience.js?v=atelier-20261113c', './?v=atelier-20261113c', 'assets/llm-config.js?v=atelier-20261113c', 'assets/llm-model.js?v=atelier-20261113c', 'assets/llm-ui.js?v=atelier-20261113c'}
+        self.paths = {'assets/motion.js?v=assistant-20261113d', 'assets/layout.js?v=assistant-20261113d', 'assets/selection-model.js', 'assets/insight-model.js', 'assets/insight-charts.js', 'assets/enhancement-ui.js', 'assets/data.js', 'assets/bubble-model.js', 'assets/bubble-chart.js', 'assets/bonus-model.js?v=assistant-20261113d', 'assets/bonus-charts.js?v=assistant-20261113d', 'assets/bonus-experience.js?v=assistant-20261113d', './?v=assistant-20261113d', 'assets/llm-config.js?v=assistant-20261113d', 'assets/llm-model.js?v=assistant-20261113d', 'assets/llm-ui.js?v=assistant-20261113d'}
 
     def handle_starttag(self, tag, attrs):
         for key, value in attrs:

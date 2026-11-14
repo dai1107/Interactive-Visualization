@@ -1,15 +1,15 @@
 import { SPECIES, SEX_LABELS, parsePenguins, summarize } from './data.js';
-import { BUBBLE_FIELDS, PLOT_VIEWS, summarizePlot, normalizePlotRange, describePlot, DEFAULT_SCOPE, copyScope, filterScope, selectedRows, annualSeries, snapshot } from './bubble-model.js?v=atelier-20261113c';
-import { createBubbleChart, drawSizeLegend, drawShadeLegend, drawAnnual, COLOR } from './bubble-chart.js?v=atelier-20261113c';
+import { BUBBLE_FIELDS, PLOT_VIEWS, summarizePlot, normalizePlotRange, describePlot, DEFAULT_SCOPE, copyScope, filterScope, selectedRows, annualSeries, snapshot } from './bubble-model.js?v=assistant-20261113d';
+import { createBubbleChart, drawSizeLegend, drawShadeLegend, drawAnnual, COLOR } from './bubble-chart.js?v=assistant-20261113d';
 
-import { csvFingerprint, validateView } from './bonus-model.js?v=atelier-20261113c';
-import { createBonusExperience } from './bonus-experience.js?v=atelier-20261113c';
-import { createLlmAssistant } from './llm-ui.js?v=atelier-20261113c';
+import { csvFingerprint, validateView } from './bonus-model.js?v=assistant-20261113d';
+import { createBonusExperience } from './bonus-experience.js?v=assistant-20261113d';
+import { createLlmAssistant } from './llm-ui.js?v=assistant-20261113d';
 
-import { initializeMotion, revealElement, setMetricText } from './motion.js?v=atelier-20261113c';
-import { initializeLayout, setActivePage } from './layout.js?v=atelier-20261113c';
+import { initializeMotion, revealElement, setMetricText } from './motion.js?v=assistant-20261113d';
+import { initializeLayout, setActivePage } from './layout.js?v=assistant-20261113d';
 import { hasSelection } from './selection-model.js';
-import { createEnhancements } from './enhancement-ui.js?v=atelier-20261113c';
+import { createEnhancements } from './enhancement-ui.js?v=assistant-20261113d';
 
 const $=id=>document.getElementById(id),name=id=>SPECIES.find(s=>s.id===id)?.name||id;
 const number=(v,digits=1)=>v===null||!Number.isFinite(v)?'—':v.toLocaleString('zh-CN',{minimumFractionDigits:digits,maximumFractionDigits:digits});
@@ -37,7 +37,7 @@ function sexComparison(scroll=true){
   $('comparison').open=true;$('comparison-status').textContent='A：全部年份的帽带雌性；B：全部年份的帽带雄性。各 34 条观测。';renderComparisons();if(scroll)setActivePage('compare');
 }
 const experience=createBonusExperience({rows:()=>state.model?.valid||[],fingerprint:()=>state.sourceHash,getView:captureView,applyView,captureOrigin:()=>({view:captureView(),saved:{...state.saved}}),restoreOrigin:origin=>{state.saved=origin.saved;applyView(origin.view);},sexComparison,announce,onSelectRange:(...args)=>{experience.leaveGuide();enhancements.rangeSelect(...args);}});
-const llmAssistant=createLlmAssistant({rows:()=>state.model?.valid||[],fingerprint:()=>state.sourceHash,getView:captureView,applyView:view=>{experience.leaveGuide();applyView(view);},draft:(title,notes)=>{if(!$('notebook-title').value)$('notebook-title').value=title.slice(0,100);const previous=$('notebook-notes').value;$('notebook-notes').value=(previous+(previous?'\n\n':'')+notes).slice(0,1000);$('notebook').open=true;$('notebook-message').textContent='模型解读已写入观察草稿（最多1000字），请核对后保存。';$('notebook').scrollIntoView({block:'start'});},announce});
+const llmAssistant=createLlmAssistant({rows:()=>state.model?.valid||[],fingerprint:()=>state.sourceHash,getView:captureView,applyView:view=>{experience.leaveGuide();applyView(view);setActivePage('explore');},draft:(title,notes)=>{if(!$('notebook-title').value)$('notebook-title').value=title.slice(0,100);const previous=$('notebook-notes').value;$('notebook-notes').value=(previous+(previous?'\n\n':'')+notes).slice(0,1000);$('notebook').open=true;$('notebook-message').textContent='模型解读已写入观察草稿（最多1000字），请核对后保存。';setActivePage('notebook');$('notebook-notes').focus({preventScroll:true});},announce});
 
 
 

@@ -1,11 +1,12 @@
-import { revealElement, updateNavIndicators } from './motion.js?v=atelier-20261113c';
+import { revealElement, updateNavIndicators } from './motion.js?v=assistant-20261113d';
 
 const workspacePages = {
   explore: { title: '鳍更长，也会更重吗？', description: '把总体关系拆开，看见物种与性别的差异。', kicker: 'FIELD STUDY / 01', hash: '#explorer' },
   discover: { title: '总体与局部，为什么不同？', description: '从三个问题开始，让每一次操作都有一个值得追查的方向。', kicker: 'DISCOVERY / 02', hash: '#discovery' },
   compare: { title: '并置两组，读懂差异。', description: '保留观察条件，用相同尺度比较，再回到具体样本。', kicker: 'COMPARISON / 03', hash: '#comparison' },
   notebook: { title: '把发现，留在这里。', description: '保存条件与观察，让下一次探索从已有的发现继续。', kicker: 'FIELD NOTES / 04', hash: '#notebook' },
-  method: { title: '数据的边界，解释的起点。', description: '了解观测来源、测量含义与每一项统计的口径。', kicker: 'DATA & METHODOLOGY / 05', hash: '#method' },
+  assistant: { title: '沿着问题，继续探索。', description: '让模型解读当前图表，先核对统计，再应用建议。', kicker: 'DATA ASSISTANT / 05', hash: '#assistant' },
+  method: { title: '数据的边界，解释的起点。', description: '了解观测来源、测量含义与每一项统计的口径。', kicker: 'DATA & METHODOLOGY / 06', hash: '#method' },
 };
 let workspacePage = 'explore', inspectorView = 'relation', layoutInitialized = false;
 
@@ -31,6 +32,7 @@ export function setActivePage(page, options = {}) {
   if (options.scroll !== false) window.scrollTo({ top: 0, behavior: 'instant' });
   if (options.notify !== false) notifyLayout();
   updateNavIndicators();
+  document.querySelector('.primary-nav [aria-selected="true"]')?.scrollIntoView({block:'nearest',inline:'nearest',behavior:'instant'});
   if(changing){revealElement(document.getElementById('page-'+page),7,360);revealElement(document.getElementById('workspace-title'),4,300);}
 }
 

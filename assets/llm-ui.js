@@ -1,6 +1,6 @@
-import { LLM_ENDPOINT } from './llm-config.js?v=atelier-20261113c';
-import { llmViewKey, llmEvidence, validateLlmReply, llmConnectionURL, describeLlmView } from './llm-model.js?v=atelier-20261113c';
-import { selectedRows, summarizePlot } from './bubble-model.js?v=atelier-20261113c';
+import { LLM_ENDPOINT } from './llm-config.js?v=assistant-20261113d';
+import { llmViewKey, llmEvidence, validateLlmReply, llmConnectionURL, describeLlmView } from './llm-model.js?v=assistant-20261113d';
+import { selectedRows, summarizePlot } from './bubble-model.js?v=assistant-20261113d';
 
 export function createLlmAssistant({rows,fingerprint,getView,applyView,draft,announce}) {
   const find=id=>document.getElementById(id);
@@ -47,7 +47,7 @@ export function createLlmAssistant({rows,fingerprint,getView,applyView,draft,ann
     if(!question||question.length>600){status('请输入问题，最多600字。');return;}
     cancel();const currentSequence=sequence;controller=new AbortController();const requestController=controller;
     const timeout=setTimeout(()=>requestController.abort(),55000);
-    sourceView=getView();reply=null;applied=false;previousView=null;find('llm-result').hidden=true;controls();render();status('正在请求模型，统计依据来自当前样本快照…');
+    sourceView=getView();reply=null;applied=false;previousView=null;find('llm-result').hidden=true;find('llm-empty').hidden=false;controls();render();status('正在请求模型，统计依据来自当前样本快照…');
     try{
       const response=await fetch(endpoint,{method:'POST',headers:{'Content-Type':'application/json',Authorization:'Bearer '+access},credentials:'omit',body:JSON.stringify({question,view:sourceView,sourceFingerprint:fingerprint()}),signal:requestController.signal});
       const data=await response.json();
@@ -55,7 +55,7 @@ export function createLlmAssistant({rows,fingerprint,getView,applyView,draft,ann
       if(!response.ok)throw new Error(data.error||'模型请求失败。');
       const checked=validateLlmReply(data.reply),expected=llmEvidence(rows(),sourceView,fingerprint());
       if(data.evidence?.sourceFingerprint!==fingerprint()||JSON.stringify(data.evidence)!==JSON.stringify(expected))throw new Error('后端统计与当前原始数据不一致，未使用这份回答。');
-      reply=checked;find('llm-result').hidden=false;find('llm-answer').textContent=reply.answer;
+      reply=checked;find('llm-empty').hidden=true;find('llm-result').hidden=false;find('llm-answer').textContent=reply.answer;
       const evidenceStats=expected.selected[sourceView.plot];
       find('llm-evidence').textContent=`提问快照：${describeLlmView(sourceView)} · n=${evidenceStats.n} · r=${rText(evidenceStats.r)}。数据卡由原始 CSV 计算；下方文字为模型解读，请核对。`;
       find('llm-meta').textContent=`模型：${String(data.model).slice(0,100)} · ${new Date(data.generatedAt).toLocaleString('zh-CN',{timeZone:'Asia/Shanghai',hour12:false})}（北京时间）`;
