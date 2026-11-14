@@ -90,59 +90,6 @@ def run():
     )
     OUTPUT.mkdir(exist_ok=True)
     (OUTPUT / 'data-audit.json').write_text(json.dumps(result, ensure_ascii=False, indent=2) + '\n', encoding='utf-8')
-    fmt = lambda value: '不可计算' if value is None else f'{value:.3f}'
-    lines = [
-        '# 企鹅数据核查记录', '',
-        '核查日期：2026 年 11 月 10 日。由 `python scripts/audit_penguins.py` 从本地原始 CSV 重新计算；原始文件未修改。', '',
-        '## 数据来源与版本', '',
-        '- 本地输入：[penguins.csv](../EDA_企鹅数据探索/penguins.csv)。',
-        '- 官方 CSV：https://github.com/allisonhorst/palmerpenguins/blob/main/inst/extdata/penguins.csv',
-        '- 官方说明与许可：https://allisonhorst.github.io/palmerpenguins/ ，本次核对其 CC0 数据许可。',
-        '- 原始数据由 Kristen Gorman 与 Palmer Station LTER 提供；简化数据由 Allison Horst、Alison Hill、Kristen Gorman 整理。',
-        '- 数据时间范围为 2007—2009 年；本地文件的首次下载日期未记录，本次核查日期不代表首次获取日期。',
-        f'- 本地 CSV SHA256：`{result["sha256"]}`。', '',
-        '## 完整性与异常检查', '',
-        f'- 原始记录 {len(rows)} 条，原始字段 {len(fields)} 个，完整字段重复的额外记录 {result["duplicate_extra_rows"]} 条。',
-        f'- 鳍长与体重均有效的记录 {len(valid)} 条；同时有性别的记录 {result["known_sex"]["n"]} 条。',
-        f'- 主图排除记录：{", ".join(result["invalid_main_record_ids"])}；编号仅按本地 CSV 数据行顺序生成，不是原始个体身份。',
-        '- 四项身体测量没有非正数。极端值不自动删除；IQR 仅作为复查提示，不能作为录入错误的证明。',
-        f'- 与旧分析摘要的行数、缺失数及总体和分物种相关系数一致：{"是" if result["matches_previous_summary"] else "否，需复查"}。', '',
-        '| 字段 | 缺失数量 | 有效范围或类别 |', '| --- | ---: | --- |',
-    ]
-    for field in fields:
-        if field in ranges:
-            limits = ranges[field]
-            description = f'{limits["min"]:g}—{limits["max"]:g}'
-        else:
-            description = '、'.join(map(str, sorted(set(r[field] for r in rows if r[field] is not None))))
-        lines.append(f'| {field} | {result["missing"][field]} | {description} |')
-    lines += ['', '## 总体与分组关系', '', '| 范围 | 有效样本数 | Pearson r |', '| --- | ---: | ---: |', f'| 全体 | {len(valid)} | {fmt(correlation(valid))} |']
-    for species, item in result['by_species'].items():
-        lines.append(f'| {species} | {item["n"]} | {fmt(item["pearson_r"])} |')
-    for sex, item in result['by_sex'].items():
-        lines.append(f'| 性别 {sex if sex is not None else "未记录"} | {item["n"]} | {fmt(item["pearson_r"])} |')
-    lines += ['', '### 同一物种内按性别比较', '', '| 物种 | 性别 | 有效样本数 | Pearson r |', '| --- | --- | ---: | ---: |']
-    for species, sexes in result['by_species_and_sex'].items():
-        for sex, item in sexes.items():
-            lines.append(f'| {species} | {sex} | {item["n"]} | {fmt(item["pearson_r"])} |')
-    lines += ['', '### 按物种的 IQR 复查', '', '对鳍长、体重分别计算组内 Q1 与 Q3，采用线性插值分位数，标记超出 Q1 − 1.5×IQR 或 Q3 + 1.5×IQR 的记录。保留全部标记记录。', '', '| 物种 | 字段 | 标记数量 | 记录编号 |', '| --- | --- | ---: | --- |']
-    for item in flags:
-        lines.append(f'| {item["species"]} | {item["field"]} | {len(item["record_ids"])} | {", ".join(item["record_ids"]) or "无"} |')
-    lines += ['', '## 原始数据样本', '', '| 本地记录编号 | 物种 | 岛屿 | 鳍长 mm | 体重 g | 性别 | 年份 |', '| --- | --- | --- | ---: | ---: | --- | ---: |']
-    for row in result['sample']:
-        values = [row[k] if row[k] is not None else 'NA' for k in ['record_id', 'species', 'island', 'flipper_length_mm', 'body_mass_g', 'sex', 'year']]
-        lines.append('| ' + ' | '.join(map(str, values)) + ' |')
-    lines += ['', '## 对交互设计的约束', '',
-        '1. 初始状态显示全部 342 条鳍长与体重有效的记录；性别未记录的 9 条有效测量记录仍纳入。',
-        '2. 仅当用户选择 female 或 male 时排除其他性别记录；“未记录”可以单独选择，不能当作雌性或雄性。',
-        '3. 相关系数必须基于当前实际显示的数据重算；分组数值使用对应组的数据。n 少于 3 或任一变量方差为零时显示“不可计算”。',
-        '4. 总体正相关比各物种内部更强，适合设计“总体 → 物种 → 性别”的探索任务。性别分组的差异是待探索现象，不表述为显著性检验结论。',
-        '5. 物种、性别样本量不均，页面需显示 n；年份只有三个，不能推断长期变化。',
-        '6. 数据为观察样本，相关性不能证明因果关系，样本构成不代表全体企鹅种群比例。', '',
-        '完整机器可读结果见 [data-audit.json](data-audit.json)。', '',
-        '推荐引用：Horst AM, Hill AP, Gorman KB (2020). palmerpenguins: Palmer Archipelago (Antarctica) penguin data. https://doi.org/10.5281/zenodo.3960218 。原始研究：Gorman KB, Williams TD, Fraser WR (2014). https://doi.org/10.1371/journal.pone.0090081 。', '',
-    ]
-    (OUTPUT / '02_数据核查.md').write_text('\n'.join(lines), encoding='utf-8')
     print(json.dumps({k: result[k] for k in ['row_count', 'duplicate_extra_rows', 'overall', 'by_species', 'by_species_and_sex', 'matches_previous_summary']}, ensure_ascii=False, indent=2))
 
 

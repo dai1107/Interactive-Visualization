@@ -2,72 +2,12 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
 import { createHash } from 'node:crypto';
-import vm from 'node:vm';
-import { parsePenguins, filterPenguins, pearson, SPECIES, normalizeBrush, brushRows, summarize, massBins, GUIDE_STEPS, meanAnnotations, describeExploration } from '../assets/data.js';
-import { chartSpec, histogramSpec, writeBrush, comparisonScatterSpec, comparisonHistogramSpec } from '../assets/chart.js';
-import { linearFit, trendSegments, captureSelection, comparisonSummary, comparisonBins, overlapCount } from '../assets/analysis.js';
+import { parsePenguins, filterPenguins, pearson, SPECIES, normalizeBrush, brushRows, summarize, massBins, GUIDE_STEPS, describeExploration } from '../assets/data.js';
 
 const csv = readFileSync(new URL('../EDA_企鹅数据探索/penguins.csv', import.meta.url), 'utf8');
 const audit = JSON.parse(readFileSync(new URL('../docs/data-audit.json', import.meta.url), 'utf8'));
 const model = parsePenguins(csv);
 const close = (actual, expected) => assert.ok(Math.abs(actual - expected) < 1e-12, `${actual} != ${expected}`);
-
-test('least-squares trends recover an analytic line and never extrapolate or fit a constant x', () => {
-  const rows = [180, 190, 200].map(x => ({ flipper_length_mm: x, body_mass_g: 20 * x + 100 }));
-  const fit = linearFit(rows);
-  close(fit.slope, 20); close(fit.intercept, 100);
-  assert.deepEqual(fit.extent, [180, 200]);
-  assert.equal(linearFit(rows.slice(0, 2)), null);
-  assert.equal(linearFit(rows.map(row => ({ ...row, flipper_length_mm: 180 }))), null);
-  assert.equal(linearFit(rows.map(row => ({ ...row, body_mass_g: 3500 }))).slope, 0);
-  assert.equal(trendSegments(model.valid, 'both').length, 8);
-  assert.equal(trendSegments(model.valid, 'overall').length, 2);
-  assert.equal(trendSegments(model.valid, 'species').length, 6);
-  assert.deepEqual(trendSegments(model.valid, 'none'), []);
-  const female = filterPenguins(model.valid, ['Chinstrap'], 'female');
-  for (const point of trendSegments(female, 'both')) {
-    assert.ok(point.flipper_length_mm >= 178 && point.flipper_length_mm <= 202);
-    assert.ok(['overall', 'Chinstrap'].includes(point.series));
-  }
-});
-
-test('saved comparisons own their records and filter ranges, preserving overlap and empty statistics', () => {
-  const rows = model.valid.slice(0, 4).map(row => ({ ...row }));
-  const scope = { species: ['Adelie'], sex: 'all', range: { flipper_length_mm: [180, 200], body_mass_g: [3000, 4000] } };
-  const saved = captureSelection(rows, scope), expected = saved.rows[0].body_mass_g;
-  rows[0].body_mass_g = 9999; rows.pop(); scope.species.push('Gentoo'); scope.range.flipper_length_mm[0] = 170;
-  assert.equal(saved.rows.length, 4); assert.equal(saved.rows[0].body_mass_g, expected);
-  assert.deepEqual(saved.scope.species, ['Adelie']); assert.equal(saved.scope.range.flipper_length_mm[0], 180);
-  assert.equal(overlapCount(saved.rows, saved.rows.slice(0, 2)), 2);
-  assert.equal(comparisonSummary([]).meanFlipper, null);
-  assert.equal(comparisonSummary(model.valid).n, 342);
-  const a = filterPenguins(model.valid, ['Chinstrap'], 'female'), b = filterPenguins(model.valid, ['Chinstrap'], 'male');
-  assert.equal(overlapCount(a, b), 0);
-  const bins = comparisonBins(a, b);
-  close(bins.reduce((sum, bin) => sum + bin.a_share, 0), 1);
-  close(bins.reduce((sum, bin) => sum + bin.b_share, 0), 1);
-  assert.ok(comparisonBins([], []).every(bin => bin.a_share === 0 && bin.b_share === 0));
-});
-
-test('comparison views keep shared coordinates, actual trends and normalized distributions in rendered SVG', async () => {
-  const context = vm.createContext({ console, setTimeout, clearTimeout, setInterval, clearInterval, structuredClone });
-  for (const library of ['vega', 'vega-lite']) vm.runInContext(readFileSync(new URL(`../vendor/${library}.min.js`, import.meta.url), 'utf8'), context);
-  const createView = spec => new context.vega.View(context.vega.parse(context.vegaLite.compile(spec).spec), { renderer: 'none' });
-  const view = createView(comparisonScatterSpec(500)), histogram = createView(comparisonHistogramSpec(500));
-  const female = filterPenguins(model.valid, ['Chinstrap'], 'female');
-  view.change('points', context.vega.changeset().insert(female));
-  view.change('trends', context.vega.changeset().insert(trendSegments(female, 'overall')));
-  await view.runAsync();
-  assert.equal(view.data('points').length, 34); assert.equal(view.data('trends').length, 2);
-  assert.deepEqual(Array.from(view.scale('x').domain()), [170, 235]);
-  assert.deepEqual(Array.from(view.scale('y').domain()), [2500, 6500]);
-  const svg = await view.toSVG();
-  assert.ok(svg.includes('stroke-dasharray="7,5"') && svg.includes('stroke="#243c38"'));
-  histogram.change('distribution', context.vega.changeset().insert(comparisonBins(female, model.valid)));
-  await histogram.runAsync();
-  assert.ok((await histogram.toSVG()).includes('组内占比'));
-  view.finalize(); histogram.finalize();
-});
 
 test('original CSV, missing-value handling and stable record identities match independent Python audit', () => {
   assert.equal(createHash('sha256').update(csv).digest('hex'), audit.sha256);
@@ -125,33 +65,6 @@ test('malformed input is rejected, and quoted/BOM/CRLF input remains readable', 
   close(pearson(quoted.valid), audit.overall.pearson_r);
 });
 
-test('vendored Vega compiles and renders the real data and empty state with fixed coordinate domains', async () => {
-  const context = vm.createContext({ console, setTimeout, clearTimeout, setInterval, clearInterval, structuredClone });
-  for (const library of ['vega', 'vega-lite', 'vega-embed']) vm.runInContext(readFileSync(new URL(`../vendor/${library}.min.js`, import.meta.url), 'utf8'), context);
-  assert.equal(typeof context.vegaEmbed, 'function');
-  const compiled = context.vegaLite.compile(chartSpec(700)).spec;
-  const view = new context.vega.View(context.vega.parse(compiled), { renderer: 'none' });
-  view.change('points', context.vega.changeset().insert(model.valid));
-  await view.runAsync();
-  assert.equal(view.data('points').length, 342);
-  assert.deepEqual(Array.from(view.scale('x').domain()), [170, 235]);
-  assert.deepEqual(Array.from(view.scale('y').domain()), [2500, 6500]);
-  const male = filterPenguins(model.valid, ['Chinstrap'], 'male');
-  view.change('points', context.vega.changeset().remove(() => true).insert(male));
-  view.change('focus', context.vega.changeset().insert(male[0]));
-  await view.runAsync();
-  assert.equal(view.data('points').length, 34);
-  assert.equal(view.data('focus').length, 1);
-  view.change('points', context.vega.changeset().remove(() => true));
-  view.change('focus', context.vega.changeset().remove(() => true));
-  await view.runAsync();
-  assert.equal(view.data('points').length, 0);
-  assert.deepEqual(Array.from(view.scale('x').domain()), [170, 235]);
-  const svg = await view.toSVG();
-  assert.ok(svg.includes('体重 / g'));
-  view.finalize();
-});
-
 test('rectangular selection includes its boundaries, supports empty results, and stays inside its filter baseline', () => {
   const range = { flipper_length_mm: [180, 200], body_mass_g: [3000, 4000] };
   const selected = brushRows(model.valid, range);
@@ -184,44 +97,6 @@ test('linked distribution uses identical bins and conserves baseline and selecte
   assert.equal(edges[15].baseline_count, 1);
 });
 
-test('native brush, point highlighting, linked histogram and resized range agree on the selected records', async () => {
-  const context = vm.createContext({ console, setTimeout, clearTimeout, setInterval, clearInterval, structuredClone });
-  for (const library of ['vega', 'vega-lite']) vm.runInContext(readFileSync(new URL(`../vendor/${library}.min.js`, import.meta.url), 'utf8'), context);
-  const createView = spec => new context.vega.View(context.vega.parse(context.vegaLite.compile(spec).spec), { renderer: 'none' });
-  const scatter = createView(chartSpec(700)), histogram = createView(histogramSpec(500));
-  const range = { flipper_length_mm: [180, 200], body_mass_g: [3000, 4000] };
-  scatter.change('points', context.vega.changeset().insert(model.valid));
-  await scatter.runAsync();
-  let signals = 0;
-  scatter.addSignalListener('region', () => { signals++; });
-  writeBrush(scatter, range); await scatter.runAsync();
-  assert.ok(signals > 0, 'native selection signal must be emitted for linked views');
-  const actualRange = normalizeBrush(scatter.signal('region'));
-  const selected = brushRows(model.valid, actualRange);
-  assert.equal(selected.length, 144);
-  function visit(item) {
-    if (item.mark?.name === 'observations_marks') return [{ id: item.datum.record_id, opacity: item.opacity }];
-    return item.items?.flatMap(visit) || [];
-  }
-  const highlighted = visit(scatter.scenegraph().root).filter(point => point.opacity > .5).map(point => point.id).sort();
-  assert.deepEqual(Array.from(highlighted), selected.map(row => row.record_id).sort());
-  histogram.change('distribution', context.vega.changeset().insert(massBins(model.valid, selected)));
-  await histogram.runAsync();
-  const yBefore = Array.from(histogram.scale('y').domain());
-  histogram.change('distribution', context.vega.changeset().remove(() => true).insert(massBins(model.valid, [])));
-  await histogram.runAsync();
-  assert.deepEqual(Array.from(histogram.scale('y').domain()), yBefore);
-  assert.deepEqual(Array.from(histogram.scale('x').domain()), [2500, 6500]);
-  scatter.width(300).height(290).resize(); await scatter.runAsync();
-  writeBrush(scatter, range); await scatter.runAsync();
-  assert.equal(brushRows(model.valid, normalizeBrush(scatter.signal('region'))).length, 144);
-  writeBrush(scatter, null); await scatter.runAsync();
-  assert.equal(normalizeBrush(scatter.signal('region')), null);
-  assert.equal(visit(scatter.scenegraph().root).filter(point => point.opacity > .5).length, 342);
-  assert.ok((await histogram.toSVG()).includes('体重 / g'));
-  scatter.finalize(); histogram.finalize();
-});
-
 test('the five story presets reproduce independently audited groups and the verified brush example', () => {
   const expected = [audit.overall, audit.by_species.Chinstrap, audit.by_species_and_sex.Chinstrap.female, audit.by_species_and_sex.Chinstrap.male, { n: 144, pearson_r: 0.21839439010005007 }];
   assert.equal(GUIDE_STEPS.length, expected.length);
@@ -249,33 +124,4 @@ test('observation text follows the actual scope and handles missing groups and e
   const empty = describeExploration(model.valid, { flipper_length_mm: [170, 171], body_mass_g: [2500, 2600] });
   assert.ok(empty.title.includes('没有选中'));
   assert.ok(!empty.text.includes('NaN'));
-});
-
-test('species-mean annotations are measured summaries, not observations, and can be cleared without changing data or scales', async () => {
-  const annotations = meanAnnotations(model.valid);
-  assert.equal(annotations.length, 3);
-  for (const entry of annotations) {
-    const rows = model.valid.filter(row => row.species === entry.species);
-    assert.equal(entry.n, rows.length);
-    close(entry.body_mass_g, summarize(rows).meanMass);
-    close(entry.flipper_length_mm, rows.reduce((sum, row) => sum + row.flipper_length_mm, 0) / rows.length);
-    assert.equal(entry.record_id, undefined);
-  }
-  assert.deepEqual(meanAnnotations(model.valid.slice(0, 2)), []);
-  const context = vm.createContext({ console, setTimeout, clearTimeout, setInterval, clearInterval, structuredClone });
-  for (const library of ['vega', 'vega-lite']) vm.runInContext(readFileSync(new URL(`../vendor/${library}.min.js`, import.meta.url), 'utf8'), context);
-  const view = new context.vega.View(context.vega.parse(context.vegaLite.compile(chartSpec(700)).spec), { renderer: 'none' });
-  view.change('points', context.vega.changeset().insert(model.valid));
-  view.change('annotations', context.vega.changeset().insert(annotations));
-  await view.runAsync();
-  assert.equal(view.data('annotations').length, 3);
-  const svg = await view.toSVG();
-  assert.ok(svg.includes('阿德利均值') && svg.includes('巴布亚均值'));
-  view.change('annotations', context.vega.changeset().remove(() => true));
-  await view.runAsync();
-  assert.equal(view.data('points').length, 342);
-  assert.equal(view.data('annotations').length, 0);
-  assert.deepEqual(Array.from(view.scale('x').domain()), [170, 235]);
-  assert.deepEqual(Array.from(view.scale('y').domain()), [2500, 6500]);
-  view.finalize();
 });

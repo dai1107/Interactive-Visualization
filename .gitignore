@@ -8,4 +8,5 @@ node_modules/
 !.env.example
 dist/
 dist-worker/
-.vercel/
+.wrangler/
+penguins-offline.html
